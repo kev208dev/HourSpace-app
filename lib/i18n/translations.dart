@@ -233,6 +233,10 @@ const Map<String, Map<AppLang, String>> kTranslations = {
   '학사일정': {AppLang.en: 'School schedule', AppLang.ja: '学事日程', AppLang.zh: '校历', AppLang.es: 'Calendario escolar'},
   '생일': {AppLang.en: 'Birthdays', AppLang.ja: '誕生日', AppLang.zh: '生日', AppLang.es: 'Cumpleaños'},
 
+  // ── 공유 및 구독 화면(세그먼트) ──
+  '캘린더 공유': {AppLang.en: 'Calendar sharing', AppLang.ja: 'カレンダー共有', AppLang.zh: '日历共享', AppLang.es: 'Compartir calendario'},
+  '스포츠 구독': {AppLang.en: 'Sports subscriptions', AppLang.ja: 'スポーツ購読', AppLang.zh: '体育订阅', AppLang.es: 'Suscripciones deportivas'},
+
   // ── 온보딩 슬라이드 ──
   '학교 시간표·급식,\n자동으로 채워져요': {
     AppLang.en: 'School timetable & meals,\nfilled in automatically',

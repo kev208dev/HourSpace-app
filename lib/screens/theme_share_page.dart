@@ -1,65 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/theme/app_theme.dart';
 import '../core/theme/design_tokens.dart';
+import '../i18n/strings.dart';
 import '../modals/theme_manager_modal.dart';
+import '../widgets/view_segment.dart';
 import 'sports/sports_subscription_section.dart';
 
-/// 공유 캘린더 화면 — 2탭(아이콘): 공유 일정 / 스포츠 구독.
-class ThemeSharePage extends ConsumerWidget {
+/// 공유 및 구독 화면 — 상단 세그먼트 2개: 캘린더 공유 / 스포츠 구독.
+class ThemeSharePage extends ConsumerStatefulWidget {
   const ThemeSharePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sh = context.sh;
-    return DefaultTabController(
-      length: 2,
-      child: Column(
-        children: [
-          // ── 탭바(아이콘만) ──
-          Padding(
-            padding: const EdgeInsets.fromLTRB(Gap.lg, Gap.sm, Gap.lg, 0),
-            child: TabBar(
-              indicatorSize: TabBarIndicatorSize.tab,
-              indicatorColor: sh.accent,
-              indicatorWeight: 2.5,
-              labelColor: sh.accent,
-              unselectedLabelColor: sh.inkSoft.withValues(alpha: 0.6),
-              dividerColor: sh.ink.withValues(alpha: 0.06),
-              tabs: const [
-                Tab(
-                  icon: Tooltip(
-                    message: '공유 일정',
-                    child: Icon(Icons.calendar_month_rounded, size: 24),
-                  ),
-                ),
-                Tab(
-                  icon: Tooltip(
-                    message: '스포츠 구독',
-                    child: Icon(Icons.sports_soccer_rounded, size: 24),
-                  ),
-                ),
-              ],
-            ),
+  ConsumerState<ThemeSharePage> createState() => _ThemeSharePageState();
+}
+
+class _ThemeSharePageState extends ConsumerState<ThemeSharePage> {
+  int _segment = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // ── 상단 세그먼트("캘린더 공유" | "스포츠 구독") ──
+        Padding(
+          padding: const EdgeInsets.fromLTRB(Gap.lg, Gap.sm, Gap.lg, Gap.sm),
+          child: ViewSegment(
+            index: _segment,
+            onChanged: (i) => setState(() => _segment = i),
+            labels: [tr('캘린더 공유'), tr('스포츠 구독')],
           ),
-          Expanded(
-            child: TabBarView(
-              children: [
-                // 탭1 — 공유 일정(캘린더 관리)
-                ListView(
-                  padding: const EdgeInsets.fromLTRB(Gap.lg, Gap.md, Gap.lg, 120),
-                  children: const [ThemeManagerBody()],
-                ),
-                // 탭2 — 스포츠 구독
-                ListView(
-                  padding: const EdgeInsets.fromLTRB(Gap.lg, Gap.md, Gap.lg, 120),
-                  children: const [SportsSubscriptionSection()],
-                ),
-              ],
-            ),
+        ),
+        Expanded(
+          child: IndexedStack(
+            index: _segment,
+            children: [
+              // 세그먼트1 — 캘린더 공유(테마 관리)
+              ListView(
+                padding: const EdgeInsets.fromLTRB(Gap.lg, Gap.md, Gap.lg, 120),
+                children: const [ThemeManagerBody()],
+              ),
+              // 세그먼트2 — 스포츠 구독
+              ListView(
+                padding: const EdgeInsets.fromLTRB(Gap.lg, Gap.md, Gap.lg, 120),
+                children: const [SportsSubscriptionSection()],
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
