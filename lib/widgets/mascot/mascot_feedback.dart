@@ -129,7 +129,7 @@ class _MascotToastViewState extends State<_MascotToastView>
                       Flexible(
                         child: Text(
                           widget.message,
-                          style: AppType.body.copyWith(
+                          style: AppType.bodyLarge.copyWith(
                               fontWeight: FontWeight.w700, color: sh.ink),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,

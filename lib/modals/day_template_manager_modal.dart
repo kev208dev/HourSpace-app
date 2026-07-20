@@ -71,10 +71,10 @@ class DayTemplateManagerModal extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 18, 12, 10),
               child: Row(children: [
                 Text('일별 위젯 템플릿',
-                    style: AppType.section.copyWith(fontWeight: FontWeight.w700, color: sh.ink)),
+                    style: AppType.titleMedium.copyWith(fontWeight: FontWeight.w700, color: sh.ink)),
                 const SizedBox(width: Gap.xs + 2),
                 Text('날짜에 표시할 위젯을 만들고 적용 범위를 정하세요',
-                    style: AppType.label.copyWith(color: sh.inkSoft)),
+                    style: AppType.labelMedium.copyWith(color: sh.inkSoft)),
                 const Spacer(),
                 IconButton(
                   icon: Icon(Icons.close, color: sh.inkSoft, size: 20),
@@ -176,7 +176,7 @@ class _PresetsSectionState extends State<_PresetsSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(children: [
-          Text('추천 시안', style: AppType.label.copyWith(fontWeight: FontWeight.w700,
+          Text('추천 시안', style: AppType.labelMedium.copyWith(fontWeight: FontWeight.w700,
               color: sh.inkSoft)),
           const Spacer(),
           TextButton(
@@ -238,7 +238,7 @@ class _PresetCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(preset.name, style: AppType.caption.copyWith(fontWeight: FontWeight.w700, color: sh.ink)),
+          Text(preset.name, style: AppType.bodySmall.copyWith(fontWeight: FontWeight.w700, color: sh.ink)),
           const SizedBox(height: 2),
           Expanded(child: Text(
             preset.fields.map((f) => f.label).join(' · '),
@@ -292,11 +292,11 @@ class _TemplateCard extends StatelessWidget {
         const SizedBox(width: Gap.sm),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(template.name, style: AppType.body.copyWith(
+            Text(template.name, style: AppType.bodyLarge.copyWith(
                 fontWeight: FontWeight.w600, color: sh.ink)),
             Text(
               template.fields.map((f) => f.label).join(' · '),
-              style: AppType.label.copyWith(color: sh.inkSoft),
+              style: AppType.labelMedium.copyWith(color: sh.inkSoft),
               maxLines: 1, overflow: TextOverflow.ellipsis,
             ),
             Text(_scopeLabel(template.scope),
@@ -379,7 +379,7 @@ class _DayTemplateEditorPageState extends State<DayTemplateEditorPage> {
       backgroundColor: sh.bg,
       appBar: AppBar(
         title: Text(widget.template == null ? '템플릿 만들기' : '템플릿 편집',
-            style: AppType.section.copyWith(color: sh.ink, fontWeight: FontWeight.w700)),
+            style: AppType.titleMedium.copyWith(color: sh.ink, fontWeight: FontWeight.w700)),
         actions: [
           if (widget.onDelete != null)
             TextButton(
@@ -619,7 +619,7 @@ class _FieldEditorState extends State<_FieldEditor> {
           const SizedBox(width: Gap.sm),
           Expanded(child: TextField(
             controller: _labelCtrl,
-            style: AppType.body.copyWith(color: sh.ink),
+            style: AppType.bodyLarge.copyWith(color: sh.ink),
             decoration: InputDecoration(
                 hintText: '라벨',
                 hintStyle: TextStyle(color: sh.inkFaint),
@@ -716,6 +716,6 @@ class _Label extends StatelessWidget {
   final String text; final SurlapColors sh;
   const _Label(this.text, this.sh);
   @override Widget build(BuildContext context) => Text(text,
-    style: AppType.label.copyWith(fontWeight: FontWeight.w700,
+    style: AppType.labelMedium.copyWith(fontWeight: FontWeight.w700,
         color: sh.inkSoft));
 }

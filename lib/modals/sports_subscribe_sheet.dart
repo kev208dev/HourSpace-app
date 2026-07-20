@@ -76,7 +76,7 @@ class _SheetState extends ConsumerState<_SportsSubscribeSheet> {
                       ),
                     ),
                   Text(titles[step],
-                      style: AppType.section.copyWith(
+                      style: AppType.titleMedium.copyWith(
                           fontWeight: FontWeight.w800, color: sh.ink)),
                   const Spacer(),
                   // 항상 보이는 닫기(×) 버튼.
@@ -168,7 +168,7 @@ class _SheetState extends ConsumerState<_SportsSubscribeSheet> {
             const SizedBox(width: 10),
             Expanded(
               child: Text(tr(t.name),
-                  style: AppType.body.copyWith(
+                  style: AppType.bodyLarge.copyWith(
                       fontWeight: FontWeight.w700, color: sh.ink)),
             ),
             already
@@ -177,7 +177,7 @@ class _SheetState extends ConsumerState<_SportsSubscribeSheet> {
                       Icon(Icons.check_rounded, size: 16, color: sh.accent),
                       const SizedBox(width: 4),
                       Text('구독중',
-                          style: AppType.caption.copyWith(color: sh.accent)),
+                          style: AppType.bodySmall.copyWith(color: sh.accent)),
                     ],
                   )
                 : FilledButton(
@@ -248,12 +248,12 @@ class _Tile extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(label,
-                  style: AppType.body.copyWith(
+                  style: AppType.bodyLarge.copyWith(
                       fontWeight: FontWeight.w700, color: sh.ink)),
             ),
             if (sub != null)
               Text(sub!,
-                  style: AppType.caption.copyWith(color: sh.inkFaint)),
+                  style: AppType.bodySmall.copyWith(color: sh.inkFaint)),
           ],
         ),
       ),
@@ -285,7 +285,7 @@ class _Row extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(label,
-                    style: AppType.body.copyWith(
+                    style: AppType.bodyLarge.copyWith(
                         fontWeight: FontWeight.w700, color: sh.ink)),
               ),
               Icon(Icons.chevron_right_rounded, size: 20, color: sh.inkSoft),

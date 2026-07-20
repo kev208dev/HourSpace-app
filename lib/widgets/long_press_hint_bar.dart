@@ -53,7 +53,7 @@ class _LongPressHintBarState extends State<LongPressHintBar> {
               Expanded(
                 child: Text(
                   tr('Tip · 날짜를 꾹 눌러 일정·할 일·위젯을 빠르게 추가하세요.'),
-                  style: AppType.label.copyWith(
+                  style: AppType.labelMedium.copyWith(
                     color: sh.ink,
                     fontWeight: FontWeight.w700,
                     fontSize: 12.5,

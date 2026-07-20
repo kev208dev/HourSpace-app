@@ -155,7 +155,7 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
               children: [
                 Text(
                   isEdit ? tr('일정 편집') : tr('일정 추가'),
-                  style: AppType.title.copyWith(
+                  style: AppType.titleLarge.copyWith(
                       fontSize: 21,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.3,
@@ -189,7 +189,7 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
                 onTap: _pickDate,
                 child: Text(
                   _dateKey,
-                  style: AppType.body
+                  style: AppType.bodyLarge
                       .copyWith(color: sh.accent, fontWeight: FontWeight.w500),
                 ),
               ),
@@ -206,7 +206,7 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
                   TextField(
                     controller: _textCtrl,
                     autofocus: true,
-                    style: AppType.body.copyWith(color: sh.ink),
+                    style: AppType.bodyLarge.copyWith(color: sh.ink),
                     decoration: InputDecoration(
                       hintText: tr('예: 내일 3시 회의'),
                       hintStyle: TextStyle(color: sh.inkFaint),
@@ -319,13 +319,13 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
                             size: 16, color: sh.inkSoft),
                         const SizedBox(width: 6),
                         Text(tr('종료일'),
-                            style: AppType.label.copyWith(color: sh.inkSoft)),
+                            style: AppType.labelMedium.copyWith(color: sh.inkSoft)),
                         const SizedBox(width: 8),
                         GestureDetector(
                           onTap: _pickUntilDate,
                           child: Text(
                             _recurUntil ?? tr('무기한'),
-                            style: AppType.body.copyWith(
+                            style: AppType.bodyLarge.copyWith(
                                 color: _recurUntil != null
                                     ? sh.accent
                                     : sh.inkFaint,
@@ -353,7 +353,7 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
             // 캘린더(카테고리) 선택
             if (themes.isNotEmpty) ...[
               Text(tr('캘린더 (여러 개 선택 가능)'),
-                  style: AppType.label.copyWith(color: sh.inkSoft)),
+                  style: AppType.labelMedium.copyWith(color: sh.inkSoft)),
               const SizedBox(height: Gap.sm),
               Wrap(
                 spacing: 8,
@@ -586,25 +586,25 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
         backgroundColor: sh.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(tr('시간 겹침'),
-            style: AppType.section.copyWith(color: sh.ink)),
+            style: AppType.titleMedium.copyWith(color: sh.ink)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(tr('이 시간 같은 날 일정과 겹쳐요:'),
-                style: AppType.body.copyWith(color: sh.inkSoft)),
+                style: AppType.bodyLarge.copyWith(color: sh.inkSoft)),
             const SizedBox(height: 8),
             ...conflicts.take(4).map((e) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: Text(
                       '• ${e.tm}${e.te != null ? "~${e.te}" : ""}  ${e.t}',
-                      style: AppType.body.copyWith(color: sh.ink)),
+                      style: AppType.bodyLarge.copyWith(color: sh.ink)),
                 )),
             if (conflicts.length > 4)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(trf('외 {0}개', [conflicts.length - 4]),
-                    style: AppType.caption.copyWith(color: sh.inkFaint)),
+                    style: AppType.bodySmall.copyWith(color: sh.inkFaint)),
               ),
           ],
         ),
@@ -641,7 +641,7 @@ class _FieldRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppType.label.copyWith(color: sh.inkSoft)),
+        Text(label, style: AppType.labelMedium.copyWith(color: sh.inkSoft)),
         const SizedBox(height: Gap.xs),
         Container(
           width: double.infinity,
@@ -685,7 +685,7 @@ class _TimeBtn extends StatelessWidget {
         ),
         child: Text(
           value ?? hint,
-          style: AppType.body.copyWith(
+          style: AppType.bodyLarge.copyWith(
               color: value != null ? sh.accentInk : sh.inkFaint,
               fontWeight: value != null ? FontWeight.w600 : FontWeight.w400),
         ),
@@ -725,7 +725,7 @@ class _ThemeChip extends StatelessWidget {
                     color: color, shape: BoxShape.circle)),
             const SizedBox(width: Gap.xs),
             Text(tr(theme.name),
-                style: AppType.caption.copyWith(
+                style: AppType.bodySmall.copyWith(
                     color: selected ? color : color.withValues(alpha: 0.8),
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
           ],
@@ -763,7 +763,7 @@ class _RecurChip extends StatelessWidget {
               color: selected ? sh.accent : Colors.transparent),
         ),
         child: Text(label,
-            style: AppType.label.copyWith(
+            style: AppType.labelMedium.copyWith(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
                 color: selected ? sh.accentInk : sh.inkSoft)),
@@ -812,7 +812,7 @@ class _ParseSuggestionChip extends StatelessWidget {
             Flexible(
               child: Text(
                 '${parts.join(' · ')} — ${tr('적용')}',
-                style: AppType.caption.copyWith(
+                style: AppType.bodySmall.copyWith(
                     color: sh.accentInk, fontWeight: FontWeight.w700),
                 overflow: TextOverflow.ellipsis,
               ),

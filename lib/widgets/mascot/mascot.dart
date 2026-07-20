@@ -180,7 +180,7 @@ class MascotEmptyState extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: AppType.body.copyWith(
+              style: AppType.bodyLarge.copyWith(
                   fontSize: 16, fontWeight: FontWeight.w800, color: sh.ink),
             ),
             if (message != null) ...[
@@ -188,7 +188,7 @@ class MascotEmptyState extends StatelessWidget {
               Text(
                 message!,
                 textAlign: TextAlign.center,
-                style: AppType.label
+                style: AppType.labelMedium
                     .copyWith(fontSize: 13, color: sh.inkSoft, height: 1.4),
               ),
             ],
@@ -246,7 +246,7 @@ class MascotNote extends StatelessWidget {
             children: [
               Text(
                 text,
-                style: AppType.body
+                style: AppType.bodyLarge
                     .copyWith(color: sh.inkFaint, height: 1.35),
               ),
               if (trailing != null) ...[
@@ -291,7 +291,7 @@ class MascotMessageCard extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: AppType.body.copyWith(
+              style: AppType.bodyLarge.copyWith(
                   fontWeight: FontWeight.w700, color: sh.ink, height: 1.35),
             ),
           ),

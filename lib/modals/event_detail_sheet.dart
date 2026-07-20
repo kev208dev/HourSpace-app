@@ -97,7 +97,7 @@ class _EventDetailSheet extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(e.t,
-                    style: AppType.section.copyWith(
+                    style: AppType.titleMedium.copyWith(
                         fontWeight: FontWeight.w800, color: sh.ink)),
               ),
               // 항상 보이는 닫기(×) 버튼.
@@ -128,7 +128,7 @@ class _EventDetailSheet extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text('읽기 전용 일정 — 외부 소스에서 자동으로 표시돼요.',
-                      style: AppType.caption.copyWith(color: sh.inkSoft)),
+                      style: AppType.bodySmall.copyWith(color: sh.inkSoft)),
                 ),
               ],
             ),
@@ -165,7 +165,7 @@ class _EventDetailSheet extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(text,
-                style: AppType.body.copyWith(
+                style: AppType.bodyLarge.copyWith(
                     fontWeight: FontWeight.w600, color: sh.ink)),
           ),
         ],

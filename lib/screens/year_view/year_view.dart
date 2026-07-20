@@ -168,7 +168,7 @@ class _ZoomOverlayState extends State<_ZoomOverlay>
                           child: Center(
                             child: Text(
                               _monthNames[widget.month - 1],
-                              style: AppType.label.copyWith(
+                              style: AppType.labelMedium.copyWith(
                                   fontSize: 12 + 8 * t,
                                   fontWeight: FontWeight.w800,
                                   color: sh.inkSoft),
@@ -254,7 +254,7 @@ class _MiniMonthCard extends StatelessWidget {
               child: Center(
                 child: Text(
                   _monthNames[month - 1],
-                  style: AppType.label.copyWith(
+                  style: AppType.labelMedium.copyWith(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                     color: isCurrentMonth ? sh.accent : sh.inkSoft,

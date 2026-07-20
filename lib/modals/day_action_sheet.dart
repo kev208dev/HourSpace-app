@@ -66,7 +66,7 @@ class DayActionSheet extends ConsumerWidget {
             Row(
               children: [
                 Text(i18nd.monthDay(date),
-                    style: AppType.body
+                    style: AppType.bodyLarge
                         .copyWith(fontWeight: FontWeight.w700, color: sh.ink)),
                 const Spacer(),
                 // 항상 보이는 닫기(×) 버튼.
@@ -105,7 +105,7 @@ class DayActionSheet extends ConsumerWidget {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(trf('{0} 기록하기', [tpl.name]),
-                                style: AppType.body.copyWith(
+                                style: AppType.bodyLarge.copyWith(
                                     fontWeight: FontWeight.w800,
                                     color: sh.accent)),
                           ),
@@ -157,7 +157,7 @@ class DayActionSheet extends ConsumerWidget {
             if (events.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(trf('이 날의 일정 ({0})', [events.length]),
-                  style: AppType.label.copyWith(
+                  style: AppType.labelMedium.copyWith(
                       fontWeight: FontWeight.w700, color: sh.inkSoft)),
               ...events.asMap().entries.map((e) => ListTile(
                     contentPadding: EdgeInsets.zero,
@@ -166,7 +166,7 @@ class DayActionSheet extends ConsumerWidget {
                     title: Text(e.value.t,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AppType.body.copyWith(color: sh.ink)),
+                        style: AppType.bodyLarge.copyWith(color: sh.ink)),
                     trailing:
                         Icon(Icons.edit_outlined, size: 16, color: sh.inkFaint),
                     onTap: () {
@@ -181,7 +181,7 @@ class DayActionSheet extends ConsumerWidget {
             if (todos.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(trf('이 날의 할 일 ({0})', [todos.length]),
-                  style: AppType.label.copyWith(
+                  style: AppType.labelMedium.copyWith(
                       fontWeight: FontWeight.w700, color: sh.inkSoft)),
               ...todos.map((t) => ListTile(
                     contentPadding: EdgeInsets.zero,
@@ -198,7 +198,7 @@ class DayActionSheet extends ConsumerWidget {
                     title: Text(t.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AppType.body.copyWith(
+                        style: AppType.bodyLarge.copyWith(
                             color: t.done ? sh.inkFaint : sh.ink,
                             decoration: t.done
                                 ? TextDecoration.lineThrough
@@ -233,7 +233,7 @@ void _showWidgetPicker(BuildContext context, WidgetRef ref, String dateKey) {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(tr('위젯 추가'),
-                style: AppType.section
+                style: AppType.titleMedium
                     .copyWith(fontWeight: FontWeight.w800, color: sh.ink)),
             const SizedBox(height: 4),
             if (templates.isEmpty)
@@ -244,7 +244,7 @@ void _showWidgetPicker(BuildContext context, WidgetRef ref, String dateKey) {
               )
             else
               Text(tr('추가할 위젯을 선택하세요.'),
-                  style: AppType.label.copyWith(color: sh.inkSoft)),
+                  style: AppType.labelMedium.copyWith(color: sh.inkSoft)),
             const SizedBox(height: Gap.sm),
             ...templates.map((tpl) {
               final applied = tpl.scope.appliesTo(dateKey);
@@ -253,9 +253,9 @@ void _showWidgetPicker(BuildContext context, WidgetRef ref, String dateKey) {
                 leading: Icon(Icons.dashboard_customize_outlined,
                     size: 20, color: sh.accent),
                 title: Text(tpl.name,
-                    style: AppType.body.copyWith(color: sh.ink)),
+                    style: AppType.bodyLarge.copyWith(color: sh.ink)),
                 subtitle: Text(trf('{0}개 항목', [tpl.fields.length]),
-                    style: AppType.caption.copyWith(color: sh.inkSoft)),
+                    style: AppType.bodySmall.copyWith(color: sh.inkSoft)),
                 trailing: applied
                     ? Icon(Icons.check_rounded, size: 18, color: sh.accent)
                     : Icon(Icons.add_rounded, size: 18, color: sh.inkSoft),
@@ -293,7 +293,7 @@ void _showWidgetPicker(BuildContext context, WidgetRef ref, String dateKey) {
                     Icon(Icons.add_rounded, size: 20, color: sh.accent),
                     const SizedBox(width: 6),
                     Text(tr('새 위젯 만들기'),
-                        style: AppType.body.copyWith(
+                        style: AppType.bodyLarge.copyWith(
                             fontWeight: FontWeight.w800, color: sh.accent)),
                   ],
                 ),
@@ -322,7 +322,7 @@ class _Tile extends StatelessWidget {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Icon(icon, color: color, size: 20),
-      title: Text(label, style: AppType.body.copyWith(color: color)),
+      title: Text(label, style: AppType.bodyLarge.copyWith(color: color)),
       onTap: onTap,
     );
   }

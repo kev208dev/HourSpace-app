@@ -37,7 +37,7 @@ class DayWidgetInputModal extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 18, 12, 10),
               child: Row(children: [
                 Text('📊 ${date.month}월 ${date.day}일 기록',
-                    style: AppType.section.copyWith(fontWeight: FontWeight.w700, color: sh.ink)),
+                    style: AppType.titleMedium.copyWith(fontWeight: FontWeight.w700, color: sh.ink)),
                 const Spacer(),
                 IconButton(
                   icon: Icon(Icons.close, color: sh.inkSoft, size: 20),
@@ -86,7 +86,7 @@ class _TemplateSection extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: Text(template.name,
-              style: AppType.body.copyWith(fontWeight: FontWeight.w700,
+              style: AppType.bodyLarge.copyWith(fontWeight: FontWeight.w700,
                   color: sh.inkSoft)),
         ),
         ...template.fields.map((field) {

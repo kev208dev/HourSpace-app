@@ -36,7 +36,7 @@ class ProfileView extends ConsumerWidget {
                   style: AppType.eyebrow.copyWith(color: sh.accent)),
               const SizedBox(height: 4),
               Text(tr('프로필'),
-                  style: AppType.title.copyWith(
+                  style: AppType.titleLarge.copyWith(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.6,
@@ -192,7 +192,7 @@ class _AccountCard extends StatelessWidget {
               sh.accent.withValues(alpha: 0.04),
             ],
           ),
-          borderRadius: BorderRadius.circular(Radii.hero),
+          borderRadius: BorderRadius.circular(Radii.card),
           border: Border.all(color: sh.accent.withValues(alpha: 0.18)),
           boxShadow: [
             BoxShadow(
@@ -237,7 +237,7 @@ class _AccountCard extends StatelessWidget {
                   Text(name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppType.title.copyWith(
+                      style: AppType.titleLarge.copyWith(
                           fontSize: 17,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.3,
@@ -246,7 +246,7 @@ class _AccountCard extends StatelessWidget {
                   Text(email,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppType.label.copyWith(
+                      style: AppType.labelMedium.copyWith(
                           fontSize: 12.5,
                           color: sh.ink.withValues(alpha: 0.55))),
                 ],
@@ -261,7 +261,7 @@ class _AccountCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(tr('로그인'),
-                    style: AppType.label.copyWith(
+                    style: AppType.labelMedium.copyWith(
                         fontSize: 13,
                         fontWeight: FontWeight.w800,
                         color: Colors.white)),

@@ -124,7 +124,7 @@ class _SearchSheetState extends ConsumerState<_SearchSheet> {
                       child: TextField(
                         controller: _ctrl,
                         autofocus: true,
-                        style: AppType.body.copyWith(color: sh.ink),
+                        style: AppType.bodyLarge.copyWith(color: sh.ink),
                         decoration: InputDecoration(
                           hintText: tr('일정·할 일 검색'),
                           hintStyle: TextStyle(color: sh.inkFaint),
@@ -214,10 +214,10 @@ class SearchHitTile extends StatelessWidget {
       title: Text(hit.title,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: AppType.body.copyWith(color: sh.ink)),
+          style: AppType.bodyLarge.copyWith(color: sh.ink)),
       subtitle: Text(
         '${hit.isTodo ? tr('할 일') : tr('일정')} · $dateLabel',
-        style: AppType.caption.copyWith(color: sh.inkSoft),
+        style: AppType.bodySmall.copyWith(color: sh.inkSoft),
       ),
       onTap: onTap,
     );

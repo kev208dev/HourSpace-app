@@ -45,7 +45,7 @@ class SportsSubscriptionSection extends ConsumerWidget {
                   child: Text(
                     '스포츠 API 키가 없어 경기 일정이 안 와요.\n'
                     '빌드 시 --dart-define=BALLDONTLIE_API_KEY=키 를 넣어주세요.',
-                    style: AppType.caption.copyWith(
+                    style: AppType.bodySmall.copyWith(
                         color: sh.ink, height: 1.35),
                   ),
                 ),
@@ -62,7 +62,7 @@ class SportsSubscriptionSection extends ConsumerWidget {
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text('아직 구독한 팀이 없어요.',
-                style: AppType.body.copyWith(color: sh.inkSoft)),
+                style: AppType.bodyLarge.copyWith(color: sh.inkSoft)),
           )
         else
           ...subs.map((s) => _subTile(context, ref, sh, notifier, s)),
@@ -86,7 +86,7 @@ class SportsSubscriptionSection extends ConsumerWidget {
                 Icon(Icons.add_rounded, size: 20, color: sh.accent),
                 const SizedBox(width: 6),
                 Text('스포츠 구독 추가',
-                    style: AppType.body.copyWith(
+                    style: AppType.bodyLarge.copyWith(
                         fontWeight: FontWeight.w800, color: sh.accent)),
               ],
             ),
@@ -147,14 +147,14 @@ class SportsSubscriptionSection extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(tr(s.teamName),
-                    style: AppType.body.copyWith(
+                    style: AppType.bodyLarge.copyWith(
                         fontWeight: FontWeight.w700, color: sh.ink)),
                 // 미지원 종목(e스포츠·F1 등)은 경기 소스가 없음을 명시.
                 sportInfo(s.kind).gamesSupported
                     ? Text(tr(s.leagueName),
-                        style: AppType.caption.copyWith(color: sh.inkSoft))
+                        style: AppType.bodySmall.copyWith(color: sh.inkSoft))
                     : Text(trf('{0} · 경기 소스 없음', [tr(s.leagueName)]),
-                        style: AppType.caption.copyWith(color: sh.danger)),
+                        style: AppType.bodySmall.copyWith(color: sh.danger)),
               ],
             ),
           ),
@@ -186,7 +186,7 @@ class SportsSubscriptionSection extends ConsumerWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(reminderLabel,
-                      style: AppType.caption.copyWith(
+                      style: AppType.bodySmall.copyWith(
                           fontWeight: FontWeight.w700,
                           color: s.reminderMinutes > 0
                               ? sh.accent

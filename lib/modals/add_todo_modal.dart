@@ -243,7 +243,7 @@ class _AddTodoModalState extends ConsumerState<AddTodoModal> {
             Row(
               children: [
                 Text(isEdit ? tr('할 일 편집') : tr('할 일 추가'),
-                    style: AppType.title.copyWith(
+                    style: AppType.titleLarge.copyWith(
                         fontSize: 21,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.3,
@@ -272,7 +272,7 @@ class _AddTodoModalState extends ConsumerState<AddTodoModal> {
 
             // ── 제목 + 마이크 ──────────────────────────────────────
             Text(tr('할 일 (예: 내일 p1 빨래하기)'),
-                style: AppType.label.copyWith(color: sh.inkSoft)),
+                style: AppType.labelMedium.copyWith(color: sh.inkSoft)),
             const SizedBox(height: Gap.xs),
             Container(
               padding:
@@ -288,7 +288,7 @@ class _AddTodoModalState extends ConsumerState<AddTodoModal> {
                     child: TextField(
                       controller: _textCtrl,
                       autofocus: true,
-                      style: AppType.body.copyWith(color: sh.ink),
+                      style: AppType.bodyLarge.copyWith(color: sh.ink),
                       decoration: InputDecoration(
                         hintText: tr('내일 p1 빨래하기'),
                         hintStyle: TextStyle(color: sh.inkFaint),
@@ -314,7 +314,7 @@ class _AddTodoModalState extends ConsumerState<AddTodoModal> {
                 _listening
                     ? tr('듣고 있어요… 말한 뒤 손을 떼세요')
                     : tr('마이크를 꾹 누른 채로 말하고 떼면 입력돼요 (예: "내일 p1 빨래하기"). 첫 사용 시 권한 허용 필요'),
-                style: AppType.caption.copyWith(
+                style: AppType.bodySmall.copyWith(
                     color: _listening ? sh.accent : sh.inkFaint,
                     height: 1.3),
               ),
@@ -324,7 +324,7 @@ class _AddTodoModalState extends ConsumerState<AddTodoModal> {
               Padding(
                 padding: const EdgeInsets.only(top: 6, left: 4),
                 child: Text(trf('내용: {0}', [parsed.content]),
-                    style: AppType.caption.copyWith(color: sh.accent)),
+                    style: AppType.bodySmall.copyWith(color: sh.accent)),
               ),
             const SizedBox(height: 16),
 
@@ -333,7 +333,7 @@ class _AddTodoModalState extends ConsumerState<AddTodoModal> {
               children: [
                 Icon(Icons.event_outlined, size: 18, color: sh.inkSoft),
                 const SizedBox(width: 8),
-                Text(tr('날짜'), style: AppType.body.copyWith(color: sh.inkSoft)),
+                Text(tr('날짜'), style: AppType.bodyLarge.copyWith(color: sh.inkSoft)),
                 const Spacer(),
                 if (effDate != null)
                   TextButton(
@@ -363,7 +363,7 @@ class _AddTodoModalState extends ConsumerState<AddTodoModal> {
                     ),
                     child: Text(
                       effDate ?? tr('날짜 없음'),
-                      style: AppType.body.copyWith(
+                      style: AppType.bodyLarge.copyWith(
                           color: effDate != null ? sh.accentInk : sh.inkFaint,
                           fontWeight: FontWeight.w600),
                     ),
@@ -374,7 +374,7 @@ class _AddTodoModalState extends ConsumerState<AddTodoModal> {
             const SizedBox(height: 14),
 
             // ── 우선순위 ──────────────────────────────────────────
-            Text(tr('우선순위'), style: AppType.label.copyWith(color: sh.inkSoft)),
+            Text(tr('우선순위'), style: AppType.labelMedium.copyWith(color: sh.inkSoft)),
             const SizedBox(height: Gap.sm),
             Row(
               children: [
@@ -502,7 +502,7 @@ class _PrioChip extends StatelessWidget {
               width: selected ? 1.5 : 1),
         ),
         child: Text(label,
-            style: AppType.label.copyWith(
+            style: AppType.labelMedium.copyWith(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: selected ? c : sh.inkSoft)),

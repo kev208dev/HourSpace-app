@@ -132,7 +132,7 @@ class _FeatureIntroScreenState extends State<FeatureIntroScreen> {
                     onPressed:
                         last ? null : () => Navigator.of(context).maybePop(),
                     child: Text(tr('건너뛰기'),
-                        style: AppType.body.copyWith(
+                        style: AppType.bodyLarge.copyWith(
                             fontWeight: FontWeight.w700, color: sh.inkSoft)),
                   ),
                 ),
@@ -272,14 +272,14 @@ class _FeaturePage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(feature.title,
-                      style: AppType.title.copyWith(
+                      style: AppType.titleLarge.copyWith(
                           fontSize: 27,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.6,
                           color: sh.ink)),
                   const SizedBox(height: 12),
                   Text(feature.desc,
-                      style: AppType.body.copyWith(
+                      style: AppType.bodyLarge.copyWith(
                           fontSize: 15.5, height: 1.5, color: sh.inkSoft)),
                 ],
               ),

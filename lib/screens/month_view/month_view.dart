@@ -182,7 +182,7 @@ class MonthView extends ConsumerWidget {
               child: IgnorePointer(
                 child: Center(
                   child: TweenAnimationBuilder<double>(
-                    duration: Motion.slow,
+                    duration: Motion.base,
                     curve: Motion.curve,
                     tween: Tween(begin: 0, end: 1),
                     builder: (_, v, child) => Opacity(
@@ -197,7 +197,7 @@ class MonthView extends ConsumerWidget {
                           horizontal: 26, vertical: 22),
                       decoration: BoxDecoration(
                         color: sh.card,
-                        borderRadius: BorderRadius.circular(Radii.hero),
+                        borderRadius: BorderRadius.circular(Radii.card),
                         border: Border.all(
                             color: sh.ink.withValues(alpha: 0.08)),
                         boxShadow: [
@@ -219,14 +219,14 @@ class MonthView extends ConsumerWidget {
                           const SizedBox(height: 14),
                           Text(tr('이 달은 아직 비어 있어요'),
                               textAlign: TextAlign.center,
-                              style: AppType.body.copyWith(
+                              style: AppType.bodyLarge.copyWith(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w800,
                                   color: sh.ink)),
                           const SizedBox(height: 6),
                           Text(tr('아래 + 버튼을 누르거나,\n날짜를 길게 눌러 일정을 추가해 보세요'),
                               textAlign: TextAlign.center,
-                              style: AppType.label.copyWith(
+                              style: AppType.labelMedium.copyWith(
                                   fontSize: 13,
                                   color: sh.inkSoft,
                                   height: 1.45)),

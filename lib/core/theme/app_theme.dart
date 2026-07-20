@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/color_presets.dart';
+import 'design_tokens.dart';
 
 /// ColorPreset → Flutter ThemeData 변환.
 /// 웹 CSS 변수 대응:
@@ -134,12 +135,13 @@ WidgetStateProperty<Color?> _accentOverlay(Color accent) =>
     });
 
 TextTheme _buildTextTheme(Color ink, Color inkSoft) => TextTheme(
-  bodyLarge: TextStyle(color: ink, fontFamily: 'Pretendard', fontSize: 15),
-  bodyMedium: TextStyle(color: ink, fontFamily: 'Pretendard', fontSize: 13),
-  bodySmall: TextStyle(color: inkSoft, fontFamily: 'Pretendard', fontSize: 11),
-  labelLarge: TextStyle(color: ink, fontFamily: 'Pretendard', fontWeight: FontWeight.w600, fontSize: 13),
-  titleMedium: TextStyle(color: ink, fontFamily: 'Pretendard', fontWeight: FontWeight.w600, fontSize: 15),
-  titleSmall: TextStyle(color: inkSoft, fontFamily: 'Pretendard', fontSize: 12),
+  headlineLarge: AppType.headlineLarge.copyWith(color: ink, fontFamily: 'Pretendard'),
+  titleLarge: AppType.titleLarge.copyWith(color: ink, fontFamily: 'Pretendard'),
+  titleMedium: AppType.titleMedium.copyWith(color: ink, fontFamily: 'Pretendard'),
+  bodyLarge: AppType.bodyLarge.copyWith(color: ink, fontFamily: 'Pretendard'),
+  bodyMedium: AppType.bodyMedium.copyWith(color: ink, fontFamily: 'Pretendard'),
+  bodySmall: AppType.bodySmall.copyWith(color: inkSoft, fontFamily: 'Pretendard'),
+  labelMedium: AppType.labelMedium.copyWith(color: ink, fontFamily: 'Pretendard'),
 );
 
 /// ThemeExtension으로 색상 토큰 전달 — Theme.of(context).extension 으로 접근.

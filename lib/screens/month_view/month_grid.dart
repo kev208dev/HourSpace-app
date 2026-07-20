@@ -175,7 +175,7 @@ class _MonthGridState extends State<MonthGrid> {
                 child: Center(
                   child: Text(
                     e.value,
-                    style: AppType.label.copyWith(
+                    style: AppType.labelMedium.copyWith(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.2,

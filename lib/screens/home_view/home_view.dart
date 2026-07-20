@@ -310,7 +310,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                 const SizedBox(height: 6),
                 Text(
                   i18nd.fullDate(now),
-                  style: AppType.title.copyWith(
+                  style: AppType.titleLarge.copyWith(
                       fontSize: 27,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.6,
@@ -368,7 +368,7 @@ Widget _iconBadge(SurlapColors sh, IconData icon, String label,
       ),
       const SizedBox(width: 8),
       Text(label,
-          style: AppType.label.copyWith(
+          style: AppType.labelMedium.copyWith(
               fontSize: 12.5, fontWeight: FontWeight.w700, color: sh.inkSoft)),
     ],
   );
@@ -382,14 +382,14 @@ Widget _emptyNote(SurlapColors sh, String title, String? sub) => Padding(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(title,
-              style: AppType.body.copyWith(
+              style: AppType.bodyLarge.copyWith(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: sh.inkSoft)),
           if (sub != null) ...[
             const SizedBox(height: 3),
             Text(sub,
-                style: AppType.label.copyWith(
+                style: AppType.labelMedium.copyWith(
                     fontSize: 12.5, color: sh.inkFaint, height: 1.35)),
           ],
         ],
@@ -485,7 +485,7 @@ class _NextEventCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(tr('다음 일정'),
-                      style: AppType.label.copyWith(
+                      style: AppType.labelMedium.copyWith(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w800,
                           color: heroSubColor)),
@@ -493,7 +493,7 @@ class _NextEventCard extends StatelessWidget {
                 const Spacer(),
                 if (allToday.length > 1)
                   Text(trf('오늘 {0}개', [allToday.length]),
-                      style: AppType.label
+                      style: AppType.labelMedium
                           .copyWith(fontSize: 12, color: heroSubColor)),
               ],
             ),
@@ -504,7 +504,7 @@ class _NextEventCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       next!.t,
-                      style: AppType.title.copyWith(
+                      style: AppType.titleLarge.copyWith(
                           fontSize: 23,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.4,
@@ -533,7 +533,7 @@ class _NextEventCard extends StatelessWidget {
                     const SizedBox(width: 5),
                     Text(
                       _startDesc(next),
-                      style: AppType.body.copyWith(
+                      style: AppType.bodyLarge.copyWith(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w600,
                           color: heroSubColor),
@@ -676,7 +676,7 @@ class _MealCard extends StatelessWidget {
                 Icon(icon, size: 13, color: sh.accent),
                 const SizedBox(width: 5),
                 Text(label,
-                    style: AppType.label.copyWith(
+                    style: AppType.labelMedium.copyWith(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                         color: sh.accent)),
@@ -685,7 +685,7 @@ class _MealCard extends StatelessWidget {
           ...items.map((m) => Padding(
                 padding: const EdgeInsets.only(bottom: 3),
                 child: Text(m,
-                    style: AppType.body.copyWith(
+                    style: AppType.bodyLarge.copyWith(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: sh.ink,
@@ -716,14 +716,14 @@ class _LinkLine extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(text,
-            style: AppType.body.copyWith(
+            style: AppType.bodyLarge.copyWith(
                 fontSize: 13.5, color: sh.inkSoft, height: 1.3),
             maxLines: 2),
         const SizedBox(height: 4),
         GestureDetector(
           onTap: onTap,
           child: Text(action,
-              style: AppType.label.copyWith(
+              style: AppType.labelMedium.copyWith(
                   color: sh.accent, fontWeight: FontWeight.w700)),
         ),
       ],
@@ -758,7 +758,7 @@ class _TodayStatsCard extends StatelessWidget {
               textBaseline: TextBaseline.alphabetic,
               children: [
                 Text('$count',
-                    style: AppType.title.copyWith(
+                    style: AppType.titleLarge.copyWith(
                         fontSize: 34,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -1,
@@ -768,14 +768,14 @@ class _TodayStatsCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 3),
                   child: Text(tr('개'),
-                      style: AppType.body.copyWith(
+                      style: AppType.bodyLarge.copyWith(
                           fontWeight: FontWeight.w600, color: sh.inkSoft)),
                 ),
               ],
             ),
             const SizedBox(height: 4),
             Text(count > 0 ? tr('탭해서 오늘 보기') : tr('등록된 일정이 없어요'),
-                style: AppType.label
+                style: AppType.labelMedium
                     .copyWith(fontSize: 12, color: sh.inkFaint)),
           ],
         ),
@@ -813,7 +813,7 @@ class _TodayTodosCard extends StatelessWidget {
               const Spacer(),
               if (todos.isNotEmpty)
                 Text('$remaining / ${todos.length}',
-                    style: AppType.label
+                    style: AppType.labelMedium
                         .copyWith(fontSize: 12, color: sh.inkSoft)),
             ],
           ),
@@ -865,7 +865,7 @@ class _TodayTodosCard extends StatelessWidget {
                           t.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: AppType.body.copyWith(
+                          style: AppType.bodyLarge.copyWith(
                             fontSize: 15,
                             color: t.done ? sh.inkFaint : sh.ink,
                             decoration: t.done
@@ -921,13 +921,13 @@ class _UpcomingBirthdaysCard extends StatelessWidget {
                     child: Text(b.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AppType.body.copyWith(
+                        style: AppType.bodyLarge.copyWith(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: sh.ink)),
                   ),
                   Text('${b.month}.${b.day}',
-                      style: AppType.label
+                      style: AppType.labelMedium
                           .copyWith(fontSize: 12, color: sh.inkSoft)),
                   const SizedBox(width: 8),
                   Container(
@@ -940,7 +940,7 @@ class _UpcomingBirthdaysCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(d == 0 ? tr('오늘') : 'D-$d',
-                        style: AppType.label.copyWith(
+                        style: AppType.labelMedium.copyWith(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w800,
                             color: d == 0 ? Colors.white : sh.birthdayColor)),
@@ -1015,7 +1015,7 @@ class _WeekStripCard extends StatelessWidget {
                     child: Column(
                       children: [
                         Text(i18nd.weekdayShort(i + 1),
-                            style: AppType.label.copyWith(color: dayColor)),
+                            style: AppType.labelMedium.copyWith(color: dayColor)),
                         const SizedBox(height: 4),
                         Container(
                           width: 28,
@@ -1036,7 +1036,7 @@ class _WeekStripCard extends StatelessWidget {
                               : null,
                           child: Text(
                             '${d.day}',
-                            style: AppType.caption.copyWith(
+                            style: AppType.bodySmall.copyWith(
                               fontWeight:
                                   isToday ? FontWeight.w700 : FontWeight.w500,
                               color: isToday
@@ -1104,10 +1104,10 @@ class _AcademicDDayCard extends StatelessWidget {
                 Text(highlight.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppType.body.copyWith(
+                    style: AppType.bodyLarge.copyWith(
                         fontWeight: FontWeight.w700, color: sh.ink)),
                 Text(highlight.dateKey,
-                    style: AppType.label
+                    style: AppType.labelMedium
                         .copyWith(fontSize: 12, color: sh.inkSoft)),
               ],
             ),
@@ -1119,7 +1119,7 @@ class _AcademicDDayCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(dLabel,
-                style: AppType.label.copyWith(
+                style: AppType.labelMedium.copyWith(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                     color: d == 0 ? Colors.white : c)),

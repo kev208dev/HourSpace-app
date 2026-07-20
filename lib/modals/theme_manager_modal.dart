@@ -67,7 +67,7 @@ class ThemeManagerModal extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(tr('공유 캘린더'),
-                            style: AppType.title.copyWith(
+                            style: AppType.titleLarge.copyWith(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
                                 color: sh.ink)),
@@ -219,7 +219,7 @@ class ThemeManagerBody extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: sh.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(tr('공유 코드 입력'), style: AppType.section.copyWith(color: sh.ink)),
+        title: Text(tr('공유 코드 입력'), style: AppType.titleMedium.copyWith(color: sh.ink)),
         content: TextField(
           controller: ctrl,
           autofocus: true,
@@ -273,7 +273,7 @@ class _GroupLabel extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(0, Gap.lg, 0, Gap.sm),
     child: Text(text,
-        style: AppType.label.copyWith(
+        style: AppType.labelMedium.copyWith(
             fontWeight: FontWeight.w800, color: sh.inkSoft)),
   );
 }
@@ -377,7 +377,7 @@ class _ThemeRowState extends ConsumerState<_ThemeRow> {
                     ]),
                     const SizedBox(height: 2),
                     Text(subtitle,
-                        style: AppType.caption.copyWith(color: sh.inkSoft)),
+                        style: AppType.bodySmall.copyWith(color: sh.inkSoft)),
                   ],
                 ),
               ),
@@ -414,7 +414,7 @@ class _ThemeRowState extends ConsumerState<_ThemeRow> {
 
   // 이름 — 평소엔 카드 제목 텍스트, 탭하면 편집 모드.
   Widget _nameField(SurlapColors sh) {
-    final titleStyle = AppType.body.copyWith(
+    final titleStyle = AppType.bodyLarge.copyWith(
         fontSize: 20, fontWeight: FontWeight.w800, color: sh.ink);
     if (_editing) {
       return TextField(
@@ -570,7 +570,7 @@ class _ThemeRowState extends ConsumerState<_ThemeRow> {
         return AlertDialog(
           backgroundColor: sh.card,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(tr('색상 선택'), style: AppType.section.copyWith(color: sh.ink)),
+          title: Text(tr('색상 선택'), style: AppType.titleMedium.copyWith(color: sh.ink)),
           content: SizedBox(
             width: 280,
             child: Wrap(

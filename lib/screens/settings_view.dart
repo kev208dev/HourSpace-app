@@ -336,9 +336,8 @@ class SettingsSectionCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
             color: sh.card,
-            borderRadius: BorderRadius.circular(Radii.hero),
+            borderRadius: BorderRadius.circular(Radii.card),
             border: Border.all(color: sh.ink.withValues(alpha: 0.05)),
-            boxShadow: sh.dark ? null : Shadows.hairline,
           ),
           child: child,
         ),
@@ -392,7 +391,7 @@ class CategoryFilterChip extends StatelessWidget {
             ),
             const SizedBox(width: 7),
             Text(label,
-                style: AppType.label.copyWith(
+                style: AppType.labelMedium.copyWith(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: selected ? brand : sh.ink.withValues(alpha: 0.5))),
@@ -426,11 +425,11 @@ class _MonthCellSizeRow extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(tr('달력 한 칸 크기'),
-                  style: AppType.body
+                  style: AppType.bodyLarge
                       .copyWith(fontWeight: FontWeight.w600, color: sh.ink)),
             ),
             Text('${(value * 100).round()}%',
-                style: AppType.label
+                style: AppType.labelMedium
                     .copyWith(color: sh.inkSoft, fontWeight: FontWeight.w700)),
           ]),
           SliderTheme(
@@ -508,7 +507,7 @@ class SettingsRow extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(title,
-                      style: AppType.body.copyWith(
+                      style: AppType.bodyLarge.copyWith(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           letterSpacing: -0.2,
@@ -577,7 +576,7 @@ class _TypePill extends StatelessWidget {
               const SizedBox(width: 6),
             ],
             Text(t?.label ?? tr('선택하기'),
-                style: AppType.body.copyWith(
+                style: AppType.bodyLarge.copyWith(
                     fontSize: 14, fontWeight: FontWeight.w700, color: sh.ink)),
             const SizedBox(width: 4),
             Icon(Icons.keyboard_arrow_down_rounded,
@@ -624,11 +623,11 @@ void _showTypePicker(BuildContext context, WidgetRef ref, UserType? current) {
             ),
           ),
           Text(tr('내 유형'),
-              style: AppType.section.copyWith(
+              style: AppType.titleMedium.copyWith(
                   fontSize: 18, fontWeight: FontWeight.w800, color: sh.ink)),
           const SizedBox(height: 4),
           Text(tr('유형에 따라 급식·학교 연동 표시가 달라져요.'),
-              style: AppType.caption.copyWith(color: sh.inkSoft)),
+              style: AppType.bodySmall.copyWith(color: sh.inkSoft)),
           const SizedBox(height: 12),
           ...order.map((t) {
             final sel = t == current;
@@ -636,11 +635,11 @@ void _showTypePicker(BuildContext context, WidgetRef ref, UserType? current) {
               contentPadding: EdgeInsets.zero,
               leading: Text(t.emoji, style: const TextStyle(fontSize: 22)),
               title: Text(t.label,
-                  style: AppType.body.copyWith(
+                  style: AppType.bodyLarge.copyWith(
                       fontWeight: sel ? FontWeight.w800 : FontWeight.w600,
                       color: sel ? sh.accentInk : sh.ink)),
               subtitle: Text(t.tagline,
-                  style: AppType.label.copyWith(color: sh.inkSoft)),
+                  style: AppType.labelMedium.copyWith(color: sh.inkSoft)),
               trailing: sel
                   ? Icon(Icons.check_circle_rounded, color: sh.accent, size: 20)
                   : null,
@@ -699,7 +698,7 @@ class _SchoolRow extends StatelessWidget {
                   Text(s.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppType.body.copyWith(
+                      style: AppType.bodyLarge.copyWith(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           letterSpacing: -0.2,
@@ -707,7 +706,7 @@ class _SchoolRow extends StatelessWidget {
                   Text(sub,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppType.label.copyWith(
+                      style: AppType.labelMedium.copyWith(
                           fontSize: 12, color: sh.inkSoft)),
                 ],
               ),
@@ -743,7 +742,7 @@ class _LanguagePill extends StatelessWidget {
               Text(l.flag, style: const TextStyle(fontSize: 18)),
               const SizedBox(width: 10),
               Text(l.nativeName,
-                  style: AppType.body.copyWith(
+                  style: AppType.bodyLarge.copyWith(
                       color: sh.ink,
                       fontWeight:
                           l == lang ? FontWeight.w700 : FontWeight.w400)),
@@ -762,7 +761,7 @@ class _LanguagePill extends StatelessWidget {
             Text(lang.flag, style: const TextStyle(fontSize: 16)),
             const SizedBox(width: 6),
             Text(lang.nativeName,
-                style: AppType.body.copyWith(
+                style: AppType.bodyLarge.copyWith(
                     fontSize: 14, fontWeight: FontWeight.w700, color: sh.ink)),
             const SizedBox(width: 4),
             Icon(Icons.keyboard_arrow_down_rounded,
@@ -794,7 +793,7 @@ class _WeekStartPill extends StatelessWidget {
           PopupMenuItem(
             value: e.key,
             child: Text(tr(e.value),
-                style: AppType.body.copyWith(
+                style: AppType.bodyLarge.copyWith(
                     color: sh.ink,
                     fontWeight:
                         e.key == dow ? FontWeight.w700 : FontWeight.w400)),
@@ -810,7 +809,7 @@ class _WeekStartPill extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(tr(_labels[dow] ?? '월요일'),
-                style: AppType.body.copyWith(
+                style: AppType.bodyLarge.copyWith(
                     fontSize: 14, fontWeight: FontWeight.w700, color: sh.ink)),
             const SizedBox(width: 4),
             Icon(Icons.keyboard_arrow_down_rounded,
@@ -844,7 +843,7 @@ class _HourPill extends StatelessWidget {
           PopupMenuItem(
             value: h,
             child: Text(_label(h),
-                style: AppType.body.copyWith(
+                style: AppType.bodyLarge.copyWith(
                     color: sh.ink,
                     fontWeight:
                         h == hour ? FontWeight.w700 : FontWeight.w400)),
@@ -860,7 +859,7 @@ class _HourPill extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(_label(hour),
-                style: AppType.body.copyWith(
+                style: AppType.bodyLarge.copyWith(
                     fontSize: 14, fontWeight: FontWeight.w700, color: sh.ink)),
             const SizedBox(width: 4),
             Icon(Icons.keyboard_arrow_down_rounded,
@@ -894,7 +893,7 @@ class _EmptyLabelPill extends StatelessWidget {
           PopupMenuItem(
             value: v,
             child: Text(_label(v),
-                style: AppType.body.copyWith(
+                style: AppType.bodyLarge.copyWith(
                     color: sh.ink,
                     fontWeight:
                         v == current ? FontWeight.w700 : FontWeight.w400)),
@@ -910,7 +909,7 @@ class _EmptyLabelPill extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(_label(current),
-                style: AppType.body.copyWith(
+                style: AppType.bodyLarge.copyWith(
                     fontSize: 14, fontWeight: FontWeight.w700, color: sh.ink)),
             const SizedBox(width: 4),
             Icon(Icons.keyboard_arrow_down_rounded,
@@ -944,7 +943,7 @@ class _LeadMinutesPill extends StatelessWidget {
           PopupMenuItem(
             value: m,
             child: Text(_label(m),
-                style: AppType.body.copyWith(
+                style: AppType.bodyLarge.copyWith(
                     color: sh.ink,
                     fontWeight:
                         m == minutes ? FontWeight.w700 : FontWeight.w400)),
@@ -960,7 +959,7 @@ class _LeadMinutesPill extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(_label(minutes),
-                style: AppType.body.copyWith(
+                style: AppType.bodyLarge.copyWith(
                     fontSize: 14, fontWeight: FontWeight.w700, color: sh.ink)),
             const SizedBox(width: 4),
             Icon(Icons.keyboard_arrow_down_rounded,

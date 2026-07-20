@@ -186,7 +186,7 @@ class _DayViewState extends ConsumerState<DayView> {
               const SizedBox(width: 2),
               Text(
                 i18nd.monthDay(date),
-                style: AppType.title.copyWith(
+                style: AppType.titleLarge.copyWith(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.3,
@@ -197,7 +197,7 @@ class _DayViewState extends ConsumerState<DayView> {
                 padding: const EdgeInsets.only(top: 2),
                 child: Text(
                   _dowName(date.weekday),
-                  style: AppType.body.copyWith(
+                  style: AppType.bodyLarge.copyWith(
                       fontWeight: FontWeight.w700,
                       color: isToday ? sh.accent : sh.inkSoft),
                 ),
@@ -380,12 +380,12 @@ class _DayViewState extends ConsumerState<DayView> {
                                 size: 96),
                             const SizedBox(height: 10),
                             Text(tr('이 날은 아직 비어있어요'),
-                                style: AppType.body.copyWith(
+                                style: AppType.bodyLarge.copyWith(
                                     color: sh.inkFaint,
                                     fontWeight: FontWeight.w600)),
                             const SizedBox(height: 2),
                             Text(tr('탭해서 일정을 추가해보세요'),
-                                style: AppType.label
+                                style: AppType.labelMedium
                                     .copyWith(color: sh.inkFaint)),
                           ],
                         ),
@@ -607,11 +607,7 @@ class _TodoBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: sh.card,
         borderRadius: BorderRadius.circular(Radii.card),
-        // 라이트는 soft shadow / 다크는 hairline.
-        border: sh.dark
-            ? Border.all(color: sh.border, width: 0.5)
-            : null,
-        boxShadow: sh.dark ? null : Shadows.card,
+        border: Border.all(color: sh.border, width: Borders.hairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -661,7 +657,7 @@ class _TodoBar extends StatelessWidget {
                         t.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AppType.body.copyWith(
+                        style: AppType.bodyLarge.copyWith(
                           color: t.done ? sh.inkFaint : sh.ink,
                           decoration:
                               t.done ? TextDecoration.lineThrough : null,
@@ -696,10 +692,8 @@ class _AllDayBar extends StatelessWidget {
         // 종일 = accent 옅은 틴트로 구분.
         color: sh.accent.withValues(alpha: sh.dark ? 0.10 : 0.06),
         borderRadius: BorderRadius.circular(Radii.card),
-        border: sh.dark
-            ? Border.all(color: sh.accent.withValues(alpha: 0.22), width: 0.5)
-            : null,
-        boxShadow: sh.dark ? null : Shadows.card,
+        border: Border.all(
+            color: sh.accent.withValues(alpha: 0.22), width: Borders.hairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -724,11 +718,11 @@ class _AllDayBar extends StatelessWidget {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(e.t,
-                            style: AppType.body.copyWith(
+                            style: AppType.bodyLarge.copyWith(
                                 color: c, fontWeight: FontWeight.w600)),
                       ),
                     ])
-                  : Text(e.t, style: AppType.body.copyWith(color: sh.ink)),
+                  : Text(e.t, style: AppType.bodyLarge.copyWith(color: sh.ink)),
             );
           }),
         ],
@@ -934,7 +928,7 @@ class _TimedEventBlockState extends State<_TimedEventBlock> {
                               offset: const Offset(0, 1),
                             )]
                           // 라이트 모드: soft shadow (테두리 없이 떠 보이게)
-                          : Shadows.card),
+                          : Shadows.subtle),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -958,7 +952,7 @@ class _TimedEventBlockState extends State<_TimedEventBlock> {
                       child: Text(
                         e.t,
                         // 본문 굵게 + ink 풀톤 → 죽인 그리드 위에서 또렷.
-                        style: AppType.caption.copyWith(
+                        style: AppType.bodySmall.copyWith(
                             fontWeight: FontWeight.w700, color: sh.ink),
                         maxLines: liveHeight > widget.rowH ? 3 : 1,
                         overflow: TextOverflow.ellipsis,

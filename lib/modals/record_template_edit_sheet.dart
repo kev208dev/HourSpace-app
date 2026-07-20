@@ -116,7 +116,7 @@ class _EditSheetState extends ConsumerState<_EditSheet> {
               Row(
                 children: [
                   Text(widget.editingId != null ? tr('템플릿 편집') : tr('새 템플릿'),
-                      style: AppType.section.copyWith(
+                      style: AppType.titleMedium.copyWith(
                           fontWeight: FontWeight.w800, color: sh.ink)),
                   const Spacer(),
                   // 항상 보이는 닫기(×) 버튼.
@@ -232,7 +232,7 @@ class _EditSheetState extends ConsumerState<_EditSheet> {
   }
 
   Widget _label(String t, SurlapColors sh) => Text(t,
-      style: AppType.label
+      style: AppType.labelMedium
           .copyWith(fontWeight: FontWeight.w700, color: sh.inkSoft));
 
   Widget _field(TextEditingController c, String hint, SurlapColors sh,
@@ -249,7 +249,7 @@ class _EditSheetState extends ConsumerState<_EditSheet> {
       ),
       child: TextField(
         controller: c,
-        style: AppType.body.copyWith(color: sh.ink),
+        style: AppType.bodyLarge.copyWith(color: sh.ink),
         onChanged: onChanged,
         decoration: InputDecoration(
           isCollapsed: true,
@@ -285,7 +285,7 @@ class _ToggleRow extends StatelessWidget {
         children: [
           Expanded(
             child: Text(label,
-                style: AppType.body.copyWith(
+                style: AppType.bodyLarge.copyWith(
                     fontWeight: FontWeight.w600, color: sh.ink)),
           ),
           Switch.adaptive(

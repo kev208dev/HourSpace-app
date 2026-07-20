@@ -126,7 +126,7 @@ class _RecordTemplateSheet extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(tr('기록 템플릿'),
-                      style: AppType.section.copyWith(
+                      style: AppType.titleMedium.copyWith(
                           fontWeight: FontWeight.w800, color: sh.ink)),
                 ),
                 GestureDetector(
@@ -145,7 +145,7 @@ class _RecordTemplateSheet extends ConsumerWidget {
                         Icon(Icons.add_rounded, size: 16, color: sh.accent),
                         const SizedBox(width: 4),
                         Text(tr('새 템플릿'),
-                            style: AppType.label.copyWith(
+                            style: AppType.labelMedium.copyWith(
                                 fontWeight: FontWeight.w800,
                                 color: sh.accent)),
                       ],
@@ -163,7 +163,7 @@ class _RecordTemplateSheet extends ConsumerWidget {
             ),
             const SizedBox(height: 2),
             Text(tr('기간을 정해 적용하면 그 기간 동안 매일 빠르게 기록할 수 있어요.'),
-                style: AppType.caption.copyWith(color: sh.inkSoft)),
+                style: AppType.bodySmall.copyWith(color: sh.inkSoft)),
             const SizedBox(height: 14),
 
             ...templates.map((tpl) => _TemplateCard(
@@ -186,7 +186,7 @@ class _RecordTemplateSheet extends ConsumerWidget {
             if (ranges.isNotEmpty) ...[
               const SizedBox(height: 22),
               Text(tr('적용된 기간'),
-                  style: AppType.label.copyWith(
+                  style: AppType.labelMedium.copyWith(
                       fontWeight: FontWeight.w700, color: sh.inkSoft)),
               const SizedBox(height: 8),
               ...ranges.map((r) {
@@ -212,11 +212,11 @@ class _RecordTemplateSheet extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(tpl?.name ?? r.templateId,
-                                style: AppType.body.copyWith(
+                                style: AppType.bodyLarge.copyWith(
                                     fontWeight: FontWeight.w700,
                                     color: sh.ink)),
                             Text(_rangeLabel(r.start, r.end),
-                                style: AppType.caption
+                                style: AppType.bodySmall
                                     .copyWith(color: sh.inkSoft)),
                           ],
                         ),
@@ -290,7 +290,7 @@ class _TemplateCard extends StatelessWidget {
                       child: Text(tpl.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: AppType.body.copyWith(
+                          style: AppType.bodyLarge.copyWith(
                               fontWeight: FontWeight.w800, color: sh.ink)),
                     ),
                     if (tpl.isPreset) ...[
@@ -303,7 +303,7 @@ class _TemplateCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(tr('기본'),
-                            style: AppType.caption.copyWith(
+                            style: AppType.bodySmall.copyWith(
                                 fontSize: 10, color: sh.inkSoft)),
                       ),
                     ],
@@ -313,7 +313,7 @@ class _TemplateCard extends StatelessWidget {
                 Text(parts.join(' · '),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppType.caption.copyWith(color: sh.inkSoft)),
+                    style: AppType.bodySmall.copyWith(color: sh.inkSoft)),
               ],
             ),
           ),

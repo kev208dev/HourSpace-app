@@ -19,7 +19,7 @@ class Pressable extends StatefulWidget {
     this.onLongPress,
     this.behavior = HitTestBehavior.opaque,
     this.pressedScale = 0.97,
-    this.duration = Motion.micro,
+    this.duration = Motion.fast,
   });
 
   @override

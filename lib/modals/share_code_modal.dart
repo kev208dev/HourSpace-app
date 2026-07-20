@@ -56,7 +56,7 @@ class _ShareCodeModal extends StatelessWidget {
                   child: Text(trf('"{0}" 공유', [name]),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppType.section.copyWith(
+                      style: AppType.titleMedium.copyWith(
                           fontWeight: FontWeight.w800, color: sh.ink)),
                 ),
                 // 항상 보이는 닫기(×) 버튼.
@@ -70,7 +70,7 @@ class _ShareCodeModal extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(tr('코드나 링크를 복사해 친구에게 보내세요.'),
-                style: AppType.caption.copyWith(color: sh.inkSoft)),
+                style: AppType.bodySmall.copyWith(color: sh.inkSoft)),
             const SizedBox(height: 18),
 
             _CopyField(label: tr('공유 코드'), value: code, mono: true, sh: sh),
@@ -117,7 +117,7 @@ class _CopyFieldState extends State<_CopyField> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(widget.label,
-            style: AppType.label
+            style: AppType.labelMedium
                 .copyWith(fontWeight: FontWeight.w700, color: sh.inkSoft)),
         const SizedBox(height: 6),
         Row(
