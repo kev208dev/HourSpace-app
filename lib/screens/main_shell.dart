@@ -12,7 +12,7 @@ import '../modals/add_edit_event_modal.dart';
 import '../modals/theme_manager_modal.dart';
 import '../modals/record_template_sheet.dart';
 import '../utils/screenshot_util.dart';
-import '../widgets/bottom_nav_bar.dart';
+import '../widgets/nav_drawer.dart';
 import '../widgets/app_header.dart';
 import '../widgets/app_top_bar.dart';
 import 'home_view/home_view.dart';
@@ -48,6 +48,8 @@ class MainShell extends ConsumerWidget {
     return Scaffold(
       backgroundColor: sh.bg,
       resizeToAvoidBottomInset: false,
+      // 좌상단 햄버거(AppOverlayTopBar)로 여는 내비게이션 서랍.
+      drawer: const SurlapNavDrawer(),
       // 콘텐츠가 상·하단 시스템 영역까지 확장되도록 허용
       extendBody: true,
       extendBodyBehindAppBar: true,
@@ -88,14 +90,10 @@ class MainShell extends ConsumerWidget {
               // 스크롤 콘텐츠 가림은 각 뷰 내부의 bottom padding으로 처리
             ],
           ),
-          // ── 투명 overlay 상단 헤더 (status bar 위까지) ──
+          // ── 투명 overlay 상단 헤더 (status bar 위까지) + 좌상단 햄버거 ──
           const AppOverlayTopBar(),
-          // ── nav 뒤 하단 scrim (nav보다 아래 레이어) ──
-          const BottomNavScrim(),
           // ── 우측 하단 + 스피드다이얼 (테마일정·일정·할일) ──
           const _SpeedDialFab(),
-          // ── glass 플로팅 하단 바 (콘텐츠 위 overlay) ──
-          const SurlapBottomNav(),
         ],
       ),
     );
@@ -226,7 +224,7 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
               // ── 옵션 + FAB ──
               Positioned(
                 right: 16,
-                bottom: bottomInset + 80,
+                bottom: bottomInset + 24,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -310,8 +308,8 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
       child: GestureDetector(
         onTap: _toggle,
         child: Container(
-          width: 54,
-          height: 54,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
             color: sh.accent,
             shape: BoxShape.circle,
@@ -326,7 +324,7 @@ class _SpeedDialFabState extends State<_SpeedDialFab>
           child: Transform.rotate(
             // 한 바퀴 넘게 휘리릭 돌아 ×로(=2π + 45°).
             angle: v * 7.06858,
-            child: const Icon(Icons.add_rounded, size: 30, color: Colors.white),
+            child: const Icon(Icons.add_rounded, size: 26, color: Colors.white),
           ),
         ),
       ),

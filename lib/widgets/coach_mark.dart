@@ -39,9 +39,9 @@ List<CoachStep> get kCoachSteps => [
       ),
       CoachStep(
         targetKey: coachKeyBottomNav,
-        title: tr('아래 바로 화면 전환'),
-        desc: tr('꾸미기 · 일정 · 플래너 · 시간표 · 프로필. 화면 아래 둥근 바에서 '
-            '원하는 화면으로 바로 이동해요.'),
+        title: tr('메뉴로 화면 전환'),
+        desc: tr('왼쪽 위 메뉴 버튼을 누르면 서랍이 열려요. '
+            '홈 · 캘린더 · 스케줄 · 공유 · 프로필로 바로 이동할 수 있어요.'),
       ),
       CoachStep(
         targetKey: coachKeyTabTimetable,
