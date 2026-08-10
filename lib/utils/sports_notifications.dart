@@ -4,6 +4,7 @@ import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 import '../models/sports.dart';
 import 'notification_ids.dart';
+import '../core/platform/platform_support.dart';
 
 /// 스포츠 경기 시작 N분 전 로컬 알림 — flutter_local_notifications + timezone.
 /// 생일 알림과 동일 패턴이되, 채널/ID 영역을 분리(겹침 방지).
@@ -15,7 +16,7 @@ class SportsNotifications {
   static const int _idBase = NotificationIds.sportsBase;
 
   static Future<void> init() async {
-    if (_inited) return;
+    if (!PlatformSupport.localNotifications || _inited) return;
     tzdata.initializeTimeZones();
     try {
       tz.setLocalLocation(tz.getLocation('Asia/Seoul'));
@@ -64,6 +65,7 @@ class SportsNotifications {
     List<SportSubscription> subs,
     Map<String, List<SportsEvent>> eventsById,
   ) async {
+    if (!PlatformSupport.localNotifications) return;
     await init();
     await _cancelOwnRange();
     final subById = {for (final s in subs) s.id: s};

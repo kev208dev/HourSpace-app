@@ -41,6 +41,9 @@ dependencies:
   # NEIS HTTP
   http: ^1.4.0
 
+  # 웹 프리뷰에서 이미지 저장을 브라우저 다운로드로 대체(모바일은 gal 사용).
+  web: ^1.1.0
+
   # SVG 아이콘
   flutter_svg: ^2.0.17
   # Surlap 워드마크 — Space Grotesk(Google Fonts)

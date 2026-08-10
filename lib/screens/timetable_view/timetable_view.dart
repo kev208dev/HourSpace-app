@@ -5,7 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gal/gal.dart';
+import '../../utils/image_save.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_theme.dart';
@@ -1186,9 +1186,9 @@ class _TimetableExportPageState extends ConsumerState<TimetableExportPage> {
     try {
       final bytes = await _capture();
       if (bytes == null) return;
-      await Gal.putImageBytes(bytes,
-          name: 'Surlap_timetable_${DateTime.now().millisecondsSinceEpoch}');
-      _toast(tr('이미지를 갤러리에 저장했어요'));
+      final result = await saveImageBytes(bytes,
+          'Surlap_timetable_${DateTime.now().millisecondsSinceEpoch}');
+      _toast(tr(result.message));
     } catch (_) {
       _toast(tr('저장하지 못했어요'));
     } finally {

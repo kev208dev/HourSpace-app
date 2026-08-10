@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import '../core/platform/platform_support.dart';
 
 /// 공유 테마 변경 수신 시 즉시 로컬 알림. 생일 알림과 동일 플러그인.
 enum ShareChangeKind { added, updated, removed }
@@ -18,6 +19,7 @@ class ThemeShareNotifications {
       requestBadgePermission: false,
       requestSoundPermission: false,
     );
+    if (!PlatformSupport.localNotifications) return;
     await _plugin.initialize(
         const InitializationSettings(android: android, iOS: ios));
     _inited = true;

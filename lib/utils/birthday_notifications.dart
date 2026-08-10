@@ -4,6 +4,7 @@ import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 import '../providers/birthdays_provider.dart';
 import 'notification_ids.dart';
+import '../core/platform/platform_support.dart';
 
 /// 생일 로컬 알림 — flutter_local_notifications + timezone.
 /// 매년 반복(DateTimeComponents.dateAndTime): 당일 + N일 전 09:00.
@@ -13,7 +14,8 @@ class BirthdayNotifications {
   static bool _inited = false;
 
   static Future<void> init() async {
-    if (_inited) return;
+    // 웹에는 로컬 알림 구현이 없다 — 여기서 막지 않으면 앱 시작이 실패한다.
+    if (!PlatformSupport.localNotifications || _inited) return;
     tzdata.initializeTimeZones();
     // 한국 대상 앱 — 로컬 타임존을 Asia/Seoul로 고정(기기 zone명 조회 패키지 없이).
     try {
@@ -60,6 +62,7 @@ class BirthdayNotifications {
     required bool enabled,
     required int daysBefore,
   }) async {
+    if (!PlatformSupport.localNotifications) return;
     await init();
     // 예전에는 여기서 cancelAll() 을 불러 일정·스포츠·브리핑 알림까지 전부
     // 지웠다. 이제 생일 대역만 취소한다.

@@ -24,6 +24,9 @@ import 'providers/sports_provider.dart';
 import 'screens/splash/splash_gate.dart';
 import 'supabase/theme_share_service.dart';
 
+/// 넓은 화면에서 앱을 가둘 최대 폭(논리 픽셀). 큰 휴대폰 기준.
+const double _kMobileMaxWidth = 480;
+
 /// 딥링크 등 어디서든 스낵바를 띄우기 위한 전역 messenger key.
 final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
@@ -168,6 +171,27 @@ class _SurlapAppState extends ConsumerState<SurlapApp>
         GlobalCupertinoLocalizations.delegate,
       ],
       home: const SplashGate(),
+      builder: _mobileFrame,
+    );
+  }
+
+  /// 넓은 화면에서 앱 폭을 휴대폰 기준으로 묶는다.
+  ///
+  /// 웹 프리뷰를 데스크톱 브라우저에서 열면 레이아웃이 화면 끝까지 늘어나
+  /// 실제 모바일 화면과 전혀 다르게 보인다. 앱 자체의 디자인·정보구조는
+  /// 건드리지 않고, 최상단에서 폭만 제한한다. 모바일 폭에서는 아무 영향이 없다.
+  static Widget _mobileFrame(BuildContext context, Widget? child) {
+    if (child == null) return const SizedBox.shrink();
+    final width = MediaQuery.sizeOf(context).width;
+    if (width <= _kMobileMaxWidth) return child;
+    final sh = Theme.of(context).extension<SurlapColors>();
+    return ColoredBox(
+      color: sh?.card2 ?? Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Center(
+        child: ClipRect(
+          child: SizedBox(width: _kMobileMaxWidth, child: child),
+        ),
+      ),
     );
   }
 }

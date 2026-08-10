@@ -15,6 +15,7 @@ import '../providers/academic_schedule_provider.dart';
 import '../providers/color_preset_provider.dart';
 import '../providers/todos_provider.dart';
 import '../providers/user_type_provider.dart';
+import '../core/platform/platform_support.dart';
 
 /// Android/iOS 위젯이 함께 읽는 페이로드를 쓴다.
 ///
@@ -60,6 +61,8 @@ class WidgetBridge {
   }
 
   static Future<void> sync(WidgetRef ref) async {
+    // 웹에는 홈스크린 위젯이 없다 — 페이로드를 만들 이유도 없다.
+    if (!PlatformSupport.homeWidget) return;
     await _ensureInit();
     try {
       final payload = _build(ref);
