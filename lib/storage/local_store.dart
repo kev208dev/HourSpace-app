@@ -59,6 +59,14 @@ class LocalStore {
     return null;
   }
 
+  /// 특정 스코프의 값을 직접 읽는다(현재 스코프와 무관).
+  ///
+  /// 게스트 → 계정 데이터 이관처럼 "다른 스코프에 뭐가 있는지" 봐야 할 때만 쓴다.
+  String? getRawScoped(String scope, String key) {
+    if (!StorageKeys.accountKeys.contains(key)) return getString(key);
+    return _prefs.get('$scope::$key')?.toString();
+  }
+
   // ── 쓰기 ─────────────────────────────────────────────────
   Future<void> setString(String key, String value) async {
     await _prefs.setString(_phys(key), value);

@@ -8,9 +8,11 @@ import '../core/theme/design_tokens.dart';
 import '../core/utils/date_utils.dart' as du;
 import '../i18n/strings.dart';
 import '../modals/add_edit_event_modal.dart';
+import '../modals/guest_import_prompt.dart';
 import '../modals/add_todo_modal.dart';
 import '../modals/record_template_sheet.dart';
 import '../providers/theme_sharing_provider.dart';
+import '../supabase/auth_service.dart';
 import '../providers/view_provider.dart';
 import '../utils/screenshot_util.dart';
 import '../widgets/bottom_nav_bar.dart';
@@ -23,11 +25,34 @@ import 'todo/todo_screen.dart';
 /// 앱 셸 — 5개 탭 + 하단 내비 + 추가 FAB.
 ///
 /// 라우터 없이 [viewProvider] 하나로 탭을 전환한다(기존 구조 유지).
-class MainShell extends ConsumerWidget {
+class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends ConsumerState<MainShell> {
+  @override
+  void initState() {
+    super.initState();
+    // 로그인 상태가 바뀌면(게스트 → 계정) 기존 데이터를 가져올지 묻는다.
+    ref.listenManual(authProvider, (_, user) {
+      if (user == null) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) maybeShowGuestImportPrompt(context, ref);
+      });
+    });
+    // 앱을 켤 때 이미 로그인 상태여도 한 번 확인한다.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && ref.read(authProvider) != null) {
+        maybeShowGuestImportPrompt(context, ref);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final view = ref.watch(viewProvider);
     // 공유 캘린더 실시간 동기화 오케스트레이터를 살아있게 유지.
     ref.watch(themeSharingProvider);
