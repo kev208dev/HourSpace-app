@@ -105,7 +105,9 @@ class ThemeManagerBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sh = context.sh;
-    final themes = ref.watch(themesProvider);
+    // 공휴일 같은 시스템 캘린더는 사용자가 이름·색을 고치거나 지울 수 없다.
+    // 켜고 끄기는 캘린더 필터(CalendarFilterStrip)에서 한다.
+    final themes = ref.watch(userThemesProvider);
 
     final local =
         themes.where((t) => t.shareCode == null).toList();

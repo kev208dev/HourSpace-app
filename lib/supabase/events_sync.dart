@@ -8,6 +8,7 @@
 // 이제 EventItem.toJson() 전체를 `payload` jsonb 컬럼에 그대로 싣는다.
 // 기존 컬럼도 계속 채워 웹 클라이언트·구버전 앱과 양방향 호환을 유지한다.
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 
 import '../core/constants/storage_keys.dart';
 import '../models/event_item.dart';
@@ -80,8 +81,23 @@ class EventsSync {
     return run(_selectColumnsLegacy);
   }
 
-  static bool _looksLikeMissingPayloadColumn(Object e) =>
-      e.toString().toLowerCase().contains('payload');
+  /// "payload 컬럼이 아직 없다"만 골라낸다.
+  ///
+  /// 단순히 'payload' 가 들어갔는지만 보면, 전혀 다른 오류(네트워크·RLS 등)가
+  /// 우연히 그 단어를 포함했을 때 이 세션 내내 레거시 형식으로 떨어진다.
+  /// PostgREST 는 없는 컬럼에 대해 undefined_column(42703)을 주고 메시지에
+  /// 컬럼명을 담는다.
+  static bool _looksLikeMissingPayloadColumn(Object e) {
+    if (e is PostgrestException) {
+      if (e.code == '42703') return true;
+      final msg = e.message.toLowerCase();
+      return msg.contains('payload') &&
+          (msg.contains('does not exist') ||
+              msg.contains('could not find') ||
+              msg.contains('schema cache'));
+    }
+    return false;
+  }
 
   static Map<String, dynamic> itemToRow(
     String date,

@@ -55,6 +55,26 @@ class RecurringNotifier extends Notifier<Map<int, Map<int, String>>> {
     _persist();
   }
 
+  /// 여러 칸을 한 번에 저장한다. 시간표 빠른 편집기에서 한 번만 리빌드·저장하도록 사용한다.
+  void setCells(Map<(int, int), String> cells) {
+    final next = {
+      for (final entry in state.entries) entry.key: {...entry.value},
+    };
+    for (final entry in cells.entries) {
+      final (col, hour) = entry.key;
+      final hours = next.putIfAbsent(col, () => <int, String>{});
+      final text = entry.value.trim();
+      if (text.isEmpty) {
+        hours.remove(hour);
+      } else {
+        hours[hour] = text;
+      }
+      if (hours.isEmpty) next.remove(col);
+    }
+    state = next;
+    _persist();
+  }
+
   String? cell(int col, int hour) => state[col]?[hour];
 
   /// 계정 전환/클라우드 pull 후 다시 읽기.
@@ -64,7 +84,8 @@ class RecurringNotifier extends Notifier<Map<int, Map<int, String>>> {
 /// weekday(0=월..6=일) → hour → 제목.
 final recurringProvider =
     NotifierProvider<RecurringNotifier, Map<int, Map<int, String>>>(
-        RecurringNotifier.new);
+      RecurringNotifier.new,
+    );
 
 /// DateTime의 요일을 0=월..6=일 인덱스로.
 int weekdayIndex(DateTime d) => d.weekday - 1;
