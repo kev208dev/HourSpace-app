@@ -1,171 +1,98 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/design_tokens.dart';
 import '../../core/utils/date_utils.dart' as du;
-import '../../core/utils/todo_parser.dart';
 import '../../core/utils/todo_style.dart';
 import '../../i18n/dates.dart' as i18nd;
 import '../../i18n/strings.dart';
 import '../../models/todo_item.dart';
 import '../../modals/add_todo_modal.dart';
 import '../../providers/todos_provider.dart';
-import '../../widgets/app_empty_state.dart';
 import '../../widgets/bottom_nav_bar.dart';
-import '../../widgets/section_header.dart';
+import '../search_view.dart';
 
-/// 할 일 탭 — "내가 아직 뭘 안 했지?" 하나에 답한다.
+/// 할 일 (핸드오프 E1 · spec §8).
 ///
-/// 기본 상태는 미완료/완료 두 가지뿐이다. "진행중"은 상세 화면의 선택 상태로
-/// 남기고 메인 인터랙션에서는 뺐다.
-enum TodoFilter { today, upcoming, all }
-
-extension _TodoFilterX on TodoFilter {
-  String get label => switch (this) {
-        TodoFilter.today => '오늘',
-        TodoFilter.upcoming => '예정',
-        TodoFilter.all => '전체',
-      };
-}
-
-class TodoScreen extends ConsumerStatefulWidget {
+/// 날짜가 있는 할 일과 날짜 없는 할 일을 카드 그룹 둘로 나눠 보여준다.
+/// 정렬은 P1 → P2 → P3 → 없음 → 생성 시각.
+///
+/// 상태 표기는 세 단계(시작 전 · 진행 중 · 완료)를 그대로 보여주되, 탭은
+/// 완료 ↔ 미완료 두 단계만 오간다. 진행 중은 상세 화면에서 지정한다 —
+/// 체크박스를 눌러 완료를 취소하려는데 "진행 중"을 거치는 동작이 헷갈린다.
+class TodoScreen extends ConsumerWidget {
   const TodoScreen({super.key});
 
   @override
-  ConsumerState<TodoScreen> createState() => _TodoScreenState();
-}
-
-class _TodoScreenState extends ConsumerState<TodoScreen> {
-  final _ctrl = TextEditingController();
-  TodoFilter _filter = TodoFilter.today;
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  /// 자연어 한 줄로 바로 추가 — "내일 p1 빨래하기".
-  void _quickAdd() {
-    final raw = _ctrl.text.trim();
-    if (raw.isEmpty) return;
-    final parsed = parseTodoInput(raw);
-    final title = parsed.content.trim().isEmpty ? raw : parsed.content.trim();
-    ref.read(todosProvider.notifier).add(TodoItem(
-          id: const Uuid().v4(),
-          title: title,
-          priority: parsed.priority,
-          dateKey: parsed.dateKey ?? du.todayKey(),
-          createdAt: DateTime.now().toIso8601String(),
-        ));
-    _ctrl.clear();
-    setState(() {});
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sh = context.sh;
     final todos = ref.watch(todosProvider);
-    final todayKey = du.todayKey();
-
-    final today = todos.where((t) => t.dateKey == todayKey).toList()
-      ..sort(_order);
-    final upcoming = todos
-        .where((t) => t.dateKey != null && t.dateKey!.compareTo(todayKey) > 0)
-        .toList()
-      ..sort(_order);
+    final dated = todos.where((t) => t.dateKey != null).toList()..sort(_order);
     final undated = todos.where((t) => t.dateKey == null).toList()..sort(_order);
-    final overdue = todos
-        .where((t) =>
-            !t.done &&
-            t.dateKey != null &&
-            t.dateKey!.compareTo(todayKey) < 0)
-        .toList()
-      ..sort(_order);
+    final done = todos.where((t) => t.done).length;
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(
-          Gap.lg, Gap.sm, Gap.lg, kBottomNavClearance),
+    return Stack(
       children: [
-        Text(tr('할 일'),
-            style: AppType.display.copyWith(color: context.sh.ink)),
-        const SizedBox(height: Gap.md),
-        _QuickAddField(controller: _ctrl, onSubmit: _quickAdd),
-        const SizedBox(height: Gap.md),
-        _FilterChips(
-          current: _filter,
-          onChanged: (f) => setState(() => _filter = f),
+        ListView(
+          padding: const EdgeInsets.fromLTRB(
+              Gap.lg, Gap.md, Gap.lg, kBottomNavClearance + 72),
+          children: [
+            _Header(done: done, total: todos.length),
+            const SizedBox(height: Gap.sm),
+            _GroupLabel(tr('날짜가 있는 할 일')),
+            if (dated.isEmpty)
+              _EmptyLine(tr('날짜가 있는 할 일이 없습니다.'))
+            else
+              _TodoCard(todos: dated, showDate: true),
+            const SizedBox(height: Gap.lg),
+            _GroupLabel(tr('날짜 없는 할 일')),
+            if (undated.isEmpty)
+              _EmptyLine(tr('날짜 없는 할 일이 없습니다.'))
+            else
+              _TodoCard(todos: undated, showDate: false),
+            const SizedBox(height: Gap.lg),
+            // 저장 범위를 화면에 그대로 고지한다.
+            Container(
+              padding: const EdgeInsets.all(Gap.md),
+              decoration: BoxDecoration(
+                color: sh.card2,
+                borderRadius: BorderRadius.circular(Radii.md),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Icon(Icons.info_outline_rounded,
+                        size: 16, color: sh.ink.withValues(alpha: 0.45)),
+                  ),
+                  const SizedBox(width: Gap.sm),
+                  Expanded(
+                    child: Text(
+                      tr('할 일은 계정별로 기기에 저장되고, 클라우드 동기화와 JSON 백업에도 함께 담깁니다.'),
+                      style: AppType.sub.copyWith(
+                          fontSize: 12,
+                          height: 1.55,
+                          color: sh.ink.withValues(alpha: 0.58)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: Gap.md),
-        ..._sections(
-          todayKey: todayKey,
-          today: today,
-          upcoming: upcoming,
-          undated: undated,
-          overdue: overdue,
+        Positioned(
+          right: Gap.lg,
+          bottom: kBottomNavClearance,
+          child: _AddFab(onTap: () => showAddTodoModal(context)),
         ),
       ],
     );
   }
 
-  List<Widget> _sections({
-    required String todayKey,
-    required List<TodoItem> today,
-    required List<TodoItem> upcoming,
-    required List<TodoItem> undated,
-    required List<TodoItem> overdue,
-  }) {
-    final out = <Widget>[];
-
-    void section(String title, List<TodoItem> items, {String? counter}) {
-      if (items.isEmpty) return;
-      out.add(SectionHeader(title: title, trailing: counter));
-      out.addAll(items.map((t) => TodoTile(todo: t)));
-      out.add(const SizedBox(height: Gap.lg));
-    }
-
-    switch (_filter) {
-      case TodoFilter.today:
-        if (overdue.isNotEmpty) section(tr('지난 할 일'), overdue);
-        section(
-          tr('오늘'),
-          today,
-          counter: '${today.where((t) => t.done).length}/${today.length}',
-        );
-        if (today.isEmpty && overdue.isEmpty) out.add(_empty(tr('오늘 할 일이 없어요')));
-      case TodoFilter.upcoming:
-        section(tr('예정'), upcoming);
-        if (upcoming.isEmpty) out.add(_empty(tr('예정된 할 일이 없어요')));
-      case TodoFilter.all:
-        if (overdue.isNotEmpty) section(tr('지난 할 일'), overdue);
-        section(tr('오늘'), today);
-        section(tr('예정'), upcoming);
-        section(tr('날짜 없음'), undated);
-        if (today.isEmpty &&
-            upcoming.isEmpty &&
-            undated.isEmpty &&
-            overdue.isEmpty) {
-          out.add(_empty(tr('아직 할 일이 없어요')));
-        }
-    }
-    return out;
-  }
-
-  Widget _empty(String text) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: Gap.lg),
-        child: AppEmptyState(
-          icon: Icons.checklist_rounded,
-          title: text,
-          message: tr('위 입력창에 말하듯 적으면 바로 추가돼요'),
-        ),
-      );
-
-  /// 미완료 먼저, 그 다음 날짜, 그 다음 우선순위.
+  /// P1 → P2 → P3 → 없음 → 생성 시각.
   static int _order(TodoItem a, TodoItem b) {
-    if (a.done != b.done) return a.done ? 1 : -1;
-    final d = (a.dateKey ?? '9999').compareTo(b.dateKey ?? '9999');
-    if (d != 0) return d;
     int rank(TodoItem t) => t.hasPriority ? t.priority : 99;
     final r = rank(a).compareTo(rank(b));
     if (r != 0) return r;
@@ -173,150 +100,226 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
   }
 }
 
-class _QuickAddField extends StatelessWidget {
-  final TextEditingController controller;
-  final VoidCallback onSubmit;
-  const _QuickAddField({required this.controller, required this.onSubmit});
+class _Header extends StatelessWidget {
+  final int done;
+  final int total;
+  const _Header({required this.done, required this.total});
+
+  @override
+  Widget build(BuildContext context) {
+    final sh = context.sh;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(tr('할 일'),
+                  style: AppType.display.copyWith(
+                      fontSize: 26, fontWeight: FontWeight.w700, color: sh.ink)),
+              const SizedBox(height: 4),
+              Text(
+                trf('{0} / {1} 완료', [done, total]),
+                style: AppType.sub
+                    .copyWith(color: sh.ink.withValues(alpha: 0.55)),
+              ),
+            ],
+          ),
+        ),
+        InkResponse(
+          onTap: () => showSearchSheet(context),
+          radius: 22,
+          child: Padding(
+            padding: const EdgeInsets.all(6),
+            child: Icon(Icons.search_rounded, size: 20, color: sh.ink),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GroupLabel extends StatelessWidget {
+  final String text;
+  const _GroupLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: Gap.sm, bottom: Gap.sm),
+        child: Text(text,
+            style: AppType.label
+                .copyWith(color: context.sh.ink.withValues(alpha: 0.50))),
+      );
+}
+
+class _EmptyLine extends StatelessWidget {
+  final String text;
+  const _EmptyLine(this.text);
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: Gap.md),
+        child: Text(text,
+            style: AppType.body
+                .copyWith(color: context.sh.ink.withValues(alpha: 0.42))),
+      );
+}
+
+/// 할 일 카드 — 흰 카드 안에 행이 divider 로 나뉜다.
+class _TodoCard extends StatelessWidget {
+  final List<TodoItem> todos;
+  final bool showDate;
+  const _TodoCard({required this.todos, required this.showDate});
 
   @override
   Widget build(BuildContext context) {
     final sh = context.sh;
     return Container(
-      padding: const EdgeInsets.only(left: Gap.md, right: Gap.xs),
       decoration: BoxDecoration(
-        color: sh.card2,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: sh.border),
+        color: sh.card,
+        borderRadius: BorderRadius.circular(Radii.card),
+        boxShadow: sh.shadowCard,
       ),
-      child: Row(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
         children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => onSubmit(),
-              style: AppType.body.copyWith(color: sh.ink),
-              decoration: InputDecoration(
-                hintText: tr('할 일을 말하듯 입력…'),
-                hintStyle: TextStyle(color: sh.inkFaint),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 14),
-              ),
+          for (var i = 0; i < todos.length; i++)
+            _TodoRow(
+              todo: todos[i],
+              showDate: showDate,
+              last: i == todos.length - 1,
             ),
-          ),
-          IconButton(
-            onPressed: onSubmit,
-            icon: Icon(Icons.add_rounded, color: sh.accent),
-            tooltip: tr('추가'),
-          ),
         ],
       ),
     );
   }
 }
 
-class _FilterChips extends StatelessWidget {
-  final TodoFilter current;
-  final ValueChanged<TodoFilter> onChanged;
-  const _FilterChips({required this.current, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    final sh = context.sh;
-    return Wrap(
-      spacing: Gap.sm,
-      children: [
-        for (final f in TodoFilter.values)
-          ChoiceChip(
-            label: Text(tr(f.label)),
-            selected: f == current,
-            onSelected: (_) => onChanged(f),
-            showCheckmark: false,
-            backgroundColor: sh.card2,
-            selectedColor: sh.accentBg,
-            labelStyle: AppType.sub.copyWith(
-              color: f == current ? sh.accentInk : sh.inkSoft,
-              fontWeight: f == current ? FontWeight.w800 : FontWeight.w600,
-            ),
-            side: BorderSide(color: f == current ? sh.accent : sh.border),
-          ),
-      ],
-    );
-  }
-}
-
-/// 할 일 한 줄 — 체크박스 + 제목 + (날짜) + 우선순위.
-class TodoTile extends ConsumerWidget {
+class _TodoRow extends ConsumerWidget {
   final TodoItem todo;
+  final bool showDate;
+  final bool last;
 
-  /// 날짜 배지를 숨긴다(이미 날짜별로 묶인 목록 안에서).
-  final bool hideDate;
-
-  const TodoTile({super.key, required this.todo, this.hideDate = false});
+  const _TodoRow({
+    required this.todo,
+    required this.showDate,
+    required this.last,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sh = context.sh;
     return InkWell(
-      onTap: () => showAddTodoModal(context, edit: todo),
-      borderRadius: BorderRadius.circular(Radii.small),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(
-          children: [
-            IconButton(
-              onPressed: () =>
-                  ref.read(todosProvider.notifier).toggleDone(todo.id),
-              iconSize: 22,
-              constraints: const BoxConstraints(
-                  minWidth: kMinTouch, minHeight: kMinTouch),
-              padding: EdgeInsets.zero,
-              tooltip: tr(todo.done ? '완료 취소' : '완료'),
-              icon: Icon(
-                todo.done
-                    ? Icons.check_circle_rounded
-                    : todo.inProgress
-                        ? Icons.timelapse_rounded
-                        : Icons.circle_outlined,
-                color: todo.done
-                    ? sh.now
-                    : todo.inProgress
-                        ? todoPriorityColor(2, sh)
-                        : sh.inkFaint,
-              ),
-            ),
-            const SizedBox(width: Gap.sm),
-            Expanded(
-              child: Text(
-                todo.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: AppType.body.copyWith(
-                  color: todo.done ? sh.inkFaint : sh.ink,
-                  decoration: todo.done ? TextDecoration.lineThrough : null,
-                  decorationColor: sh.inkFaint,
+      onTap: () => ref.read(todosProvider.notifier).toggleDone(todo.id),
+      onLongPress: () => showAddTodoModal(context, edit: todo),
+      child: Opacity(
+        opacity: todo.done ? 0.55 : 1,
+        child: Container(
+          padding:
+              const EdgeInsets.symmetric(horizontal: Gap.md, vertical: 13),
+          decoration: BoxDecoration(
+            border: last
+                ? null
+                : Border(bottom: BorderSide(color: sh.border)),
+          ),
+          child: Row(
+            children: [
+              Icon(todoStatusIcon(todo.status),
+                  size: 21,
+                  color: todoStatusColor(todo.status, todo.priority, sh)),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      todo.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppType.button.copyWith(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w400,
+                        color: sh.ink,
+                        decoration:
+                            todo.done ? TextDecoration.lineThrough : null,
+                        decorationColor: sh.ink.withValues(alpha: 0.45),
+                      ),
+                    ),
+                    if (showDate) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        '${_statusLabel(todo)} · ${_dateLabel(todo)}',
+                        style: AppType.caption.copyWith(
+                            color: sh.ink.withValues(alpha: 0.48)),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-            ),
-            if (!hideDate && todo.dateKey != null) ...[
-              const SizedBox(width: Gap.sm),
-              Text(
-                i18nd.monthDay(du.fromDateKey(todo.dateKey!)),
-                style: AppType.caption.copyWith(color: sh.inkFaint),
-              ),
-            ],
-            if (todo.hasPriority) ...[
-              const SizedBox(width: Gap.sm),
-              Text(
-                'P${todo.priority}',
-                style: AppType.label.copyWith(
-                  color: todoPriorityColor(todo.priority, sh),
-                  fontWeight: FontWeight.w800,
+              if (todo.hasPriority) ...[
+                const SizedBox(width: Gap.sm),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: todoPriorityColor(todo.priority, sh)
+                        .withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(Radii.pill),
+                  ),
+                  child: Text('P${todo.priority}',
+                      style: AppType.micro.copyWith(
+                          color: todoPriorityColor(todo.priority, sh))),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _statusLabel(TodoItem t) {
+    if (t.done) return tr('완료');
+    if (t.inProgress) return tr('진행 중');
+    return tr('시작 전');
+  }
+
+  static String _dateLabel(TodoItem t) {
+    final key = t.dateKey;
+    if (key == null) return tr('날짜 없음');
+    try {
+      final d = du.fromDateKey(key);
+      return '${d.month}월 ${d.day}일 ${i18nd.weekdayShort(d.weekday)}';
+    } catch (_) {
+      return '';
+    }
+  }
+}
+
+/// 우하단 추가 버튼 — 56px, radius 20, accent 채움.
+class _AddFab extends StatelessWidget {
+  final VoidCallback onTap;
+  const _AddFab({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final sh = context.sh;
+    return Semantics(
+      button: true,
+      label: tr('할 일 추가'),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 56,
+          height: 56,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: sh.accent,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: sh.shadowLift,
+          ),
+          child: Icon(Icons.add_rounded, size: 25, color: sh.onAccent),
         ),
       ),
     );
