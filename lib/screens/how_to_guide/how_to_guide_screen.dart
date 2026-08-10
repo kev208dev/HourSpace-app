@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/design_tokens.dart';
 import '../../i18n/strings.dart';
-import '../../widgets/mascot/mascot.dart';
 
 /// 사용법 안내 — 풀스크린 가이드. 카테고리 + 펼침 카드 + 단계별 설명.
 /// 검색으로 빠른 탐색을 지원한다.
@@ -533,14 +532,14 @@ class _Header extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(tr('사용법 안내'),
-                    style: AppType.titleLarge.copyWith(
+                    style: AppType.title.copyWith(
                         fontSize: 26,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -0.4,
                         color: sh.ink)),
                 const SizedBox(height: 2),
                 Text(tr('찾는 기능을 검색하거나 카테고리에서 골라보세요.'),
-                    style: AppType.labelMedium.copyWith(color: sh.inkSoft)),
+                    style: AppType.label.copyWith(color: sh.inkSoft)),
               ],
             ),
           ),
@@ -581,7 +580,7 @@ class _SearchField extends StatelessWidget {
               child: TextField(
                 controller: controller,
                 onChanged: onChanged,
-                style: AppType.bodyLarge.copyWith(color: sh.ink, fontSize: 15),
+                style: AppType.body.copyWith(color: sh.ink, fontSize: 15),
                 decoration: InputDecoration(
                   hintText: tr('생일 알림, 반복 일정, 위젯…'),
                   hintStyle: TextStyle(color: sh.inkFaint, fontSize: 14),
@@ -649,7 +648,7 @@ class _CategoryTabs extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     c.label,
-                    style: AppType.labelMedium.copyWith(
+                    style: AppType.label.copyWith(
                       fontWeight: FontWeight.w800,
                       color: on ? Colors.white : sh.inkSoft,
                     ),
@@ -718,18 +717,18 @@ class _TopicCard extends StatelessWidget {
                       children: [
                         if (categoryLabel != null)
                           Text(categoryLabel!,
-                              style: AppType.bodySmall.copyWith(
+                              style: AppType.caption.copyWith(
                                   color: topic.color,
                                   fontWeight: FontWeight.w800,
                                   fontSize: 10.5)),
                         Text(topic.title,
-                            style: AppType.bodyLarge.copyWith(
+                            style: AppType.body.copyWith(
                                 fontWeight: FontWeight.w800,
                                 color: sh.ink,
                                 fontSize: 15)),
                         const SizedBox(height: 2),
                         Text(topic.summary,
-                            style: AppType.bodySmall.copyWith(color: sh.inkSoft)),
+                            style: AppType.caption.copyWith(color: sh.inkSoft)),
                       ],
                     ),
                   ),
@@ -805,7 +804,7 @@ class _StepRow extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(step.text,
-                    style: AppType.bodyLarge
+                    style: AppType.body
                         .copyWith(color: sh.ink, fontSize: 14, height: 1.5)),
               ),
             ],
@@ -828,7 +827,7 @@ class _StepRow extends StatelessWidget {
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(step.tip!,
-                          style: AppType.bodySmall.copyWith(
+                          style: AppType.caption.copyWith(
                               color: sh.inkSoft, height: 1.45, fontSize: 12)),
                     ),
                   ],
@@ -853,15 +852,14 @@ class _EmptyHint extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const MascotView(
-                expression: MascotExpression.thinking, size: 96),
+            Icon(Icons.help_outline_rounded, size: 48),
             const SizedBox(height: 16),
             Text(tr('찾는 내용이 없어요'),
-                style: AppType.titleMedium.copyWith(
+                style: AppType.cardTitle.copyWith(
                     fontWeight: FontWeight.w800, color: sh.ink)),
             const SizedBox(height: 6),
             Text(tr('다른 단어로 검색해 보세요.'),
-                style: AppType.labelMedium.copyWith(color: sh.inkSoft)),
+                style: AppType.label.copyWith(color: sh.inkSoft)),
           ],
         ),
       ),

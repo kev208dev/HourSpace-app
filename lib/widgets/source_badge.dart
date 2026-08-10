@@ -29,7 +29,7 @@ class SourceBadge extends StatelessWidget {
       ),
       child: Text(
         tr(source.badgeLabel),
-        style: AppType.labelMedium.copyWith(
+        style: AppType.label.copyWith(
           color: c,
           fontWeight: FontWeight.w700,
         ),
@@ -55,7 +55,7 @@ class TodoBadge extends StatelessWidget {
       ),
       child: Text(
         tr('할 일'),
-        style: AppType.labelMedium.copyWith(
+        style: AppType.label.copyWith(
           color: c,
           fontWeight: FontWeight.w700,
         ),

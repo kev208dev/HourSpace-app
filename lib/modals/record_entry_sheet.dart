@@ -134,10 +134,10 @@ class _RecordEntrySheetState extends ConsumerState<_RecordEntrySheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(tpl.name,
-                            style: AppType.titleMedium.copyWith(
+                            style: AppType.cardTitle.copyWith(
                                 fontWeight: FontWeight.w800, color: sh.ink)),
                         Text('${d.month}월 ${d.day}일 기록',
-                            style: AppType.bodySmall.copyWith(color: sh.inkSoft)),
+                            style: AppType.caption.copyWith(color: sh.inkSoft)),
                       ],
                     ),
                   ),
@@ -184,7 +184,7 @@ class _RecordEntrySheetState extends ConsumerState<_RecordEntrySheet> {
                                 FilteringTextInputFormatter.allow(
                                     RegExp(r'[0-9.]')),
                               ],
-                              style: AppType.titleLarge.copyWith(
+                              style: AppType.title.copyWith(
                                   fontSize: 24,
                                   fontWeight: FontWeight.w800,
                                   color: sh.accent),
@@ -215,7 +215,7 @@ class _RecordEntrySheetState extends ConsumerState<_RecordEntrySheet> {
                             const SizedBox(width: 4),
                             Text(tpl.primaryUnit,
                                 style:
-                                    AppType.bodyLarge.copyWith(color: sh.inkSoft)),
+                                    AppType.body.copyWith(color: sh.inkSoft)),
                           ],
                         ],
                       ),
@@ -258,7 +258,7 @@ class _RecordEntrySheetState extends ConsumerState<_RecordEntrySheet> {
                         ),
                         child: TextField(
                           controller: _tagCtrl,
-                          style: AppType.bodyLarge.copyWith(color: sh.ink),
+                          style: AppType.body.copyWith(color: sh.ink),
                           textInputAction: TextInputAction.done,
                           decoration: InputDecoration(
                             isCollapsed: true,
@@ -294,7 +294,7 @@ class _RecordEntrySheetState extends ConsumerState<_RecordEntrySheet> {
                   ),
                   child: TextField(
                     controller: _memoCtrl,
-                    style: AppType.bodyLarge.copyWith(color: sh.ink),
+                    style: AppType.body.copyWith(color: sh.ink),
                     decoration: InputDecoration(
                       border: InputBorder.none,
                       hintText: '한 줄 메모...',
@@ -330,7 +330,7 @@ class _RecordEntrySheetState extends ConsumerState<_RecordEntrySheet> {
   }
 
   Widget _label(String t, SurlapColors sh) => Text(t,
-      style: AppType.labelMedium
+      style: AppType.label
           .copyWith(fontWeight: FontWeight.w700, color: sh.inkSoft));
 }
 
@@ -380,7 +380,7 @@ class _Chip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(label,
-                style: AppType.labelMedium.copyWith(
+                style: AppType.label.copyWith(
                     fontWeight: FontWeight.w700, color: Colors.white)),
             const SizedBox(width: 4),
             const Icon(Icons.close_rounded, size: 14, color: Colors.white),

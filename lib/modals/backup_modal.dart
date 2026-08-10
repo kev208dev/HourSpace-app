@@ -53,7 +53,7 @@ class _BackupModalState extends ConsumerState<BackupModal> {
               child: Row(children: [
                 const Text('💾 ', style: TextStyle(fontSize: 20)),
                 Text(tr('정보 백업'),
-                    style: AppType.titleMedium.copyWith(fontWeight: FontWeight.w700, color: sh.ink)),
+                    style: AppType.cardTitle.copyWith(fontWeight: FontWeight.w700, color: sh.ink)),
                 const Spacer(),
                 IconButton(icon: Icon(Icons.close, color: sh.inkSoft, size: 20),
                     onPressed: () => Navigator.pop(context)),
@@ -93,7 +93,7 @@ class _BackupModalState extends ConsumerState<BackupModal> {
                   if (_msg != null) ...[
                     const SizedBox(height: 10),
                     Text(_msg!,
-                        style: AppType.bodyLarge.copyWith(color: sh.inkSoft)),
+                        style: AppType.body.copyWith(color: sh.inkSoft)),
                   ],
                 ],
               ),
@@ -220,7 +220,7 @@ class _Section extends StatelessWidget {
   final String text; final SurlapColors sh;
   const _Section(this.text, this.sh);
   @override Widget build(BuildContext context) =>
-      Text(text, style: AppType.bodyLarge.copyWith(fontWeight: FontWeight.w700, color: sh.inkSoft));
+      Text(text, style: AppType.body.copyWith(fontWeight: FontWeight.w700, color: sh.inkSoft));
 }
 
 class _Btn extends StatelessWidget {
@@ -232,6 +232,6 @@ class _Btn extends StatelessWidget {
     style: OutlinedButton.styleFrom(
         foregroundColor: sh.ink, side: BorderSide(color: sh.border),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.card))),
-    child: Text(label, style: AppType.bodySmall),
+    child: Text(label, style: AppType.caption),
   );
 }

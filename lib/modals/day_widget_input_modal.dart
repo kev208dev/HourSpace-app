@@ -6,7 +6,7 @@ import '../core/utils/date_utils.dart' as du;
 import '../models/day_template.dart';
 import '../providers/day_widget_provider.dart';
 import '../day_widgets/widget_cell_renderer.dart';
-import '../widgets/mascot/mascot.dart';
+import '../widgets/ui_kit.dart';
 
 Future<void> showDayWidgetInputModal(BuildContext context, String dateKey) =>
     showModalBottomSheet(
@@ -37,7 +37,7 @@ class DayWidgetInputModal extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 18, 12, 10),
               child: Row(children: [
                 Text('📊 ${date.month}월 ${date.day}일 기록',
-                    style: AppType.titleMedium.copyWith(fontWeight: FontWeight.w700, color: sh.ink)),
+                    style: AppType.cardTitle.copyWith(fontWeight: FontWeight.w700, color: sh.ink)),
                 const Spacer(),
                 IconButton(
                   icon: Icon(Icons.close, color: sh.inkSoft, size: 20),
@@ -48,11 +48,11 @@ class DayWidgetInputModal extends ConsumerWidget {
             Divider(color: sh.border, height: 1),
             Expanded(
               child: applicable.isEmpty
-                  ? MascotEmptyState(
-                      expression: MascotExpression.neutral,
+                  ? SurlapEmptyState(
+  icon: Icons.dashboard_customize_rounded,
                       title: '이 날짜에 적용된 위젯이 없어요',
-                      message: '위젯을 만들어 하루를 기록해보세요',
-                      actionText: '닫기',
+                      description: '위젯을 만들어 하루를 기록해보세요',
+                      actionLabel: '닫기',
                       onAction: () => Navigator.pop(context),
                     )
                   : ListView(
@@ -86,7 +86,7 @@ class _TemplateSection extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: Text(template.name,
-              style: AppType.bodyLarge.copyWith(fontWeight: FontWeight.w700,
+              style: AppType.body.copyWith(fontWeight: FontWeight.w700,
                   color: sh.inkSoft)),
         ),
         ...template.fields.map((field) {

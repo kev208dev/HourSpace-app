@@ -141,7 +141,7 @@ class _AppToastViewState extends State<_AppToastView>
                         Flexible(
                           child: Text(
                             widget.message,
-                            style: AppType.bodyLarge.copyWith(
+                            style: AppType.body.copyWith(
                               fontWeight: FontWeight.w700,
                               color: sh.ink,
                             ),

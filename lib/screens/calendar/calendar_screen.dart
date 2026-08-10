@@ -82,7 +82,7 @@ class DayAgenda extends ConsumerWidget {
             children: [
               Text(
                 '${i18nd.monthDay(date)} ${i18nd.weekdayShort(date.weekday)}',
-                style: AppType.titleMedium.copyWith(
+                style: AppType.cardTitle.copyWith(
                     color: sh.ink, fontWeight: FontWeight.w800),
               ),
               if (isToday) ...[
@@ -95,7 +95,7 @@ class DayAgenda extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(Radii.pill),
                   ),
                   child: Text(tr('오늘'),
-                      style: AppType.labelMedium.copyWith(
+                      style: AppType.label.copyWith(
                           color: sh.now, fontWeight: FontWeight.w800)),
                 ),
               ],
@@ -151,7 +151,7 @@ class _AgendaRow extends StatelessWidget {
               width: 52,
               child: Text(
                 item.startHhmm ?? tr('종일'),
-                style: AppType.bodyMedium.copyWith(color: sh.inkSoft),
+                style: AppType.sub.copyWith(color: sh.inkSoft),
               ),
             ),
             Container(
@@ -168,7 +168,7 @@ class _AgendaRow extends StatelessWidget {
                 item.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppType.bodyLarge
+                style: AppType.body
                     .copyWith(color: sh.ink, fontWeight: FontWeight.w600),
               ),
             ),
@@ -248,7 +248,7 @@ class _Title extends ConsumerWidget {
           children: [
             Text(
               isMonth ? '${view.viewYear}' : '${selected.year}',
-              style: AppType.labelMedium.copyWith(
+              style: AppType.label.copyWith(
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
                 color: sh.inkSoft,
@@ -306,11 +306,11 @@ class CalendarModeSegment extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: mode == current ? sh.card : Colors.transparent,
                       borderRadius: BorderRadius.circular(Radii.pill),
-                      boxShadow: mode == current ? Shadows.subtle : null,
+                      boxShadow: mode == current ? sh.shadowCard : null,
                     ),
                     child: Text(
                       tr(mode.label),
-                      style: AppType.bodyMedium.copyWith(
+                      style: AppType.sub.copyWith(
                         fontWeight:
                             mode == current ? FontWeight.w800 : FontWeight.w600,
                         color: mode == current ? sh.accentInk : sh.inkSoft,

@@ -89,7 +89,7 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
           Gap.lg, Gap.sm, Gap.lg, kBottomNavClearance),
       children: [
         Text(tr('할 일'),
-            style: AppType.headlineLarge.copyWith(color: context.sh.ink)),
+            style: AppType.display.copyWith(color: context.sh.ink)),
         const SizedBox(height: Gap.md),
         _QuickAddField(controller: _ctrl, onSubmit: _quickAdd),
         const SizedBox(height: Gap.md),
@@ -195,7 +195,7 @@ class _QuickAddField extends StatelessWidget {
               controller: controller,
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => onSubmit(),
-              style: AppType.bodyLarge.copyWith(color: sh.ink),
+              style: AppType.body.copyWith(color: sh.ink),
               decoration: InputDecoration(
                 hintText: tr('할 일을 말하듯 입력…'),
                 hintStyle: TextStyle(color: sh.inkFaint),
@@ -235,7 +235,7 @@ class _FilterChips extends StatelessWidget {
             showCheckmark: false,
             backgroundColor: sh.card2,
             selectedColor: sh.accentBg,
-            labelStyle: AppType.bodyMedium.copyWith(
+            labelStyle: AppType.sub.copyWith(
               color: f == current ? sh.accentInk : sh.inkSoft,
               fontWeight: f == current ? FontWeight.w800 : FontWeight.w600,
             ),
@@ -292,7 +292,7 @@ class TodoTile extends ConsumerWidget {
                 todo.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: AppType.bodyLarge.copyWith(
+                style: AppType.body.copyWith(
                   color: todo.done ? sh.inkFaint : sh.ink,
                   decoration: todo.done ? TextDecoration.lineThrough : null,
                   decorationColor: sh.inkFaint,
@@ -303,14 +303,14 @@ class TodoTile extends ConsumerWidget {
               const SizedBox(width: Gap.sm),
               Text(
                 i18nd.monthDay(du.fromDateKey(todo.dateKey!)),
-                style: AppType.bodySmall.copyWith(color: sh.inkFaint),
+                style: AppType.caption.copyWith(color: sh.inkFaint),
               ),
             ],
             if (todo.hasPriority) ...[
               const SizedBox(width: Gap.sm),
               Text(
                 'P${todo.priority}',
-                style: AppType.labelMedium.copyWith(
+                style: AppType.label.copyWith(
                   color: todoPriorityColor(todo.priority, sh),
                   fontWeight: FontWeight.w800,
                 ),

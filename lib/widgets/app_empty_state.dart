@@ -51,7 +51,7 @@ class AppEmptyState extends StatelessWidget {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: AppType.titleMedium.copyWith(
+                style: AppType.cardTitle.copyWith(
                   color: sh.ink,
                   fontWeight: FontWeight.w800,
                 ),
@@ -61,7 +61,7 @@ class AppEmptyState extends StatelessWidget {
                 Text(
                   message!,
                   textAlign: TextAlign.center,
-                  style: AppType.bodyMedium.copyWith(color: sh.inkSoft),
+                  style: AppType.sub.copyWith(color: sh.inkSoft),
                 ),
               ],
               if (actionText != null && onAction != null) ...[
@@ -107,7 +107,7 @@ class AppNote extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: AppType.bodyMedium.copyWith(color: sh.inkSoft),
+              style: AppType.sub.copyWith(color: sh.inkSoft),
             ),
           ),
         ],

@@ -8,8 +8,8 @@ import '../core/utils/date_utils.dart' as du;
 import '../core/utils/todo_style.dart';
 import '../i18n/strings.dart';
 import '../providers/view_provider.dart';
-import '../widgets/mascot/mascot.dart';
 import '../widgets/source_badge.dart';
+import '../widgets/ui_kit.dart';
 
 /// 전역 검색 시트 — 캘린더에 보이는 모든 소스 + 할 일.
 /// 결과를 탭하면 해당 날짜의 일간 뷰로 이동한다.
@@ -96,19 +96,16 @@ class _SearchSheetState extends ConsumerState<_SearchSheet> {
               const SizedBox(height: Gap.sm),
               Expanded(
                 child: _query.trim().isEmpty
-                    ? MascotEmptyState(
-                        expression: MascotExpression.neutral,
+                    ? SurlapEmptyState(
+  icon: Icons.search_rounded,
                         title: tr('무엇을 찾고 있나요?'),
-                        message: tr('일정·할 일·학교 일정을 모두 찾아요'),
-                        mascotSize: 110,
-                        showStars: false,
+                        description: tr('일정·할 일·학교 일정을 모두 찾아요'),
                       )
                     : hits.isEmpty
-                        ? MascotEmptyState(
-                            expression: MascotExpression.thinking,
+                        ? SurlapEmptyState(
+  icon: Icons.search_rounded,
                             title: tr('검색 결과가 없어요'),
-                            message: tr('다른 단어로 찾아볼까요?'),
-                            mascotSize: 110,
+                            description: tr('다른 단어로 찾아볼까요?'),
                           )
                         : ListView.builder(
                             padding: const EdgeInsets.only(bottom: 24),
@@ -187,7 +184,7 @@ class _SearchField extends StatelessWidget {
             child: TextField(
               controller: controller,
               autofocus: true,
-              style: AppType.bodyLarge.copyWith(color: sh.ink),
+              style: AppType.body.copyWith(color: sh.ink),
               decoration: InputDecoration(
                 hintText: tr('일정·할 일·학교 검색'),
                 hintStyle: TextStyle(color: sh.inkFaint),
@@ -228,7 +225,7 @@ class _HiddenToggle extends StatelessWidget {
         value ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
         size: 18,
       ),
-      label: Text(tr('숨긴 캘린더 포함'), style: AppType.bodySmall),
+      label: Text(tr('숨긴 캘린더 포함'), style: AppType.caption),
     );
   }
 }
@@ -268,8 +265,8 @@ class SearchHitTile extends StatelessWidget {
       title: Text(hit.title,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: AppType.bodyLarge.copyWith(color: sh.ink)),
-      subtitle: Text(_subtitle, style: AppType.bodySmall.copyWith(color: sh.inkSoft)),
+          style: AppType.body.copyWith(color: sh.ink)),
+      subtitle: Text(_subtitle, style: AppType.caption.copyWith(color: sh.inkSoft)),
       trailing: hit.isTodo
           ? const TodoBadge()
           : SourceBadge(source: hit.source!, color: hit.item?.color),

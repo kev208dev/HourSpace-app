@@ -6,7 +6,6 @@ import '../../core/theme/design_tokens.dart';
 import '../../i18n/strings.dart';
 import '../../modals/neis_setup_modal.dart';
 import '../../supabase/neis_service.dart' show NeisSchool;
-import '../../widgets/mascot/mascot.dart';
 import '../../widgets/surlap_logo.dart';
 
 /// 첫 실행 — 두 걸음이면 끝난다(스펙 §28).
@@ -78,7 +77,7 @@ class _Intro extends StatelessWidget {
           const SizedBox(height: Gap.xl),
           Text(
             tr('학교와 일상을\n한 곳에서.'),
-            style: AppType.headlineLarge.copyWith(
+            style: AppType.display.copyWith(
               fontSize: 34,
               height: 1.25,
               color: sh.ink,
@@ -87,11 +86,11 @@ class _Intro extends StatelessWidget {
           const SizedBox(height: Gap.md),
           Text(
             tr('시간표·급식·학사일정이 자동으로 들어오는 학생용 캘린더'),
-            style: AppType.bodyLarge.copyWith(color: sh.inkSoft),
+            style: AppType.body.copyWith(color: sh.inkSoft),
           ),
           const Spacer(),
           const Center(
-            child: MascotView(expression: MascotExpression.happy, size: 140),
+            child: Icon(Icons.calendar_month_rounded, size: 72),
           ),
           const Spacer(),
           SizedBox(
@@ -131,17 +130,17 @@ class _SchoolStep extends StatelessWidget {
           const Spacer(),
           Text(
             tr('학교에 다니고 있나요?'),
-            style: AppType.headlineLarge.copyWith(fontSize: 30, color: sh.ink),
+            style: AppType.display.copyWith(fontSize: 30, color: sh.ink),
           ),
           const SizedBox(height: Gap.md),
           Text(
             tr('학교와 학년·반을 알려주면\n시간표·급식·학사일정을 매일 자동으로 가져와요.'),
-            style: AppType.bodyLarge.copyWith(color: sh.inkSoft, height: 1.5),
+            style: AppType.body.copyWith(color: sh.inkSoft, height: 1.5),
           ),
           const Spacer(),
           const Center(
             child:
-                MascotView(expression: MascotExpression.thinking, size: 120),
+                Icon(Icons.calendar_month_rounded, size: 72),
           ),
           const Spacer(),
           SizedBox(

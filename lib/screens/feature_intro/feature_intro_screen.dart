@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/design_tokens.dart';
 import '../../i18n/strings.dart';
-import '../../widgets/mascot/mascot.dart';
 
 /// 주요 기능 소개 — 대형 앱 스타일 풀스크린 캐러셀.
 /// 각 페이지에 실제 앱 UI를 닮은 미니 목업을 보여준다.
@@ -132,7 +131,7 @@ class _FeatureIntroScreenState extends State<FeatureIntroScreen> {
                     onPressed:
                         last ? null : () => Navigator.of(context).maybePop(),
                     child: Text(tr('건너뛰기'),
-                        style: AppType.bodyLarge.copyWith(
+                        style: AppType.body.copyWith(
                             fontWeight: FontWeight.w700, color: sh.inkSoft)),
                   ),
                 ),
@@ -272,14 +271,14 @@ class _FeaturePage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(feature.title,
-                      style: AppType.titleLarge.copyWith(
+                      style: AppType.title.copyWith(
                           fontSize: 27,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.6,
                           color: sh.ink)),
                   const SizedBox(height: 12),
                   Text(feature.desc,
-                      style: AppType.bodyLarge.copyWith(
+                      style: AppType.body.copyWith(
                           fontSize: 15.5, height: 1.5, color: sh.inkSoft)),
                 ],
               ),
@@ -303,8 +302,7 @@ class _FeaturePage extends StatelessWidget {
   Widget _mock() {
     switch (feature.mock) {
       case _Mock.start:
-        return const MascotView(
-            expression: MascotExpression.cheering, size: 168);
+        return Icon(Icons.auto_awesome_rounded, size: 72);
       case _Mock.calendar:
         return _MockCard(child: _calendarMock());
       case _Mock.timetable:
