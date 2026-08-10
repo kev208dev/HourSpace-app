@@ -10,7 +10,6 @@ import '../../modals/day_template_manager_modal.dart';
 import '../../modals/neis_setup_modal.dart';
 import '../../modals/record_template_sheet.dart';
 import '../../modals/sports_subscribe_sheet.dart';
-import '../../modals/theme_manager_modal.dart';
 import '../../providers/birthdays_provider.dart';
 import '../../providers/sports_provider.dart';
 import '../../providers/themes_provider.dart';
@@ -22,6 +21,7 @@ import '../../supabase/supabase_client.dart';
 import '../../widgets/bottom_nav_bar.dart';
 import '../login/login_screen.dart';
 import '../settings_view.dart' show SettingsSections;
+import '../calendar/categories_screen.dart';
 import '../timetable_view/timetable_view.dart';
 
 /// 내 정보 (핸드오프 I1 · spec §4).
@@ -103,7 +103,8 @@ class MoreScreen extends ConsumerWidget {
             icon: Icons.grid_view_rounded,
             label: tr('캘린더 카테고리'),
             sub: trf('{0}개', [themes.length]),
-            onTap: () => showThemeManagerModal(context),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => const CategoriesScreen())),
           ),
           _Item(
             icon: Icons.cake_rounded,
