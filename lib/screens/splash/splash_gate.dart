@@ -3,11 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../supabase/auth_service.dart';
 import '../../storage/local_store.dart';
 import '../../core/constants/storage_keys.dart';
-import '../../providers/locale_provider.dart';
 import '../main_shell.dart';
 import '../onboarding/onboarding_screen.dart';
-import '../onboarding/language_select_screen.dart';
-import '../login/login_screen.dart';
 import 'splash_screen.dart';
 
 /// 앱 진입점 게이트.
@@ -26,17 +23,15 @@ class SplashGate extends ConsumerStatefulWidget {
 }
 
 class _SplashGateState extends ConsumerState<SplashGate> {
-  // 스플래시 최소 표시 시간 — 인트로 시퀀스(낙하·착지·워드마크 ~2.6s)가 끝난 뒤
-  // 한 박자 호흡까지 보이도록 여유를 둔다(너무 빨리 넘어가지 않게).
-  static const _minSplash = Duration(milliseconds: 3100);
+  // 스플래시는 초기화가 끝날 때까지만 보인다. 예전에는 브랜드 애니메이션을
+  // 다 보여주려고 3.1초를 고정으로 기다렸는데, 매번 앱 진입이 3초씩 늦어졌다
+  // (스펙 §29). 애니메이션은 초기화와 동시에 돌고, 화면이 홱 깜빡이지 않을
+  // 만큼만 최소 시간을 둔다.
+  static const _minSplash = Duration(milliseconds: 450);
 
   bool _ready = false;
-  // 언어 선택 완료(또는 이미 선택) 여부. 첫 실행이면 false → 언어 선택 화면.
-  bool _langChosen = false;
   // 온보딩 완료(또는 이미 시청) 여부. 미시청 첫 실행이면 false.
   bool _onboardingDone = false;
-  // 이번 세션에서 로그인 화면을 이미 처리("나중에 하기" 포함)했는지.
-  bool _loginHandled = false;
 
   @override
   void initState() {
@@ -67,35 +62,21 @@ class _SplashGateState extends ConsumerState<SplashGate> {
         LocalStore.instance.getBool(StorageKeys.hasSeenOnboarding) ?? false;
     setState(() {
       _ready = true;
-      _langChosen = LocaleNotifier.chosen;
       _onboardingDone = seen;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authProvider);
     final Widget child;
     if (!_ready) {
       child = const SplashScreen(key: ValueKey('splash'));
-    } else if (!_langChosen) {
-      // 첫 실행: 스플래시 끝 → 언어 선택(학교 연결·온보딩보다 먼저).
-      child = LanguageSelectScreen(
-        key: const ValueKey('lang'),
-        onDone: () => setState(() => _langChosen = true),
-      );
     } else if (!_onboardingDone) {
-      // 언어 선택 후 → 온보딩.
+      // 첫 실행: 소개 → 학교 연결 → Today. 언어는 기기 로케일을 따르고,
+      // 로그인은 클라우드·공유가 필요한 순간에 요구한다(스펙 §28).
       child = OnboardingScreen(
         key: const ValueKey('onboarding'),
         onDone: _finishOnboarding,
-      );
-    } else if (user == null && !_loginHandled) {
-      // 미로그인 → 전체화면 로그인. 성공 또는 "나중에 하기" 시 홈으로.
-      child = LoginScreen(
-        key: const ValueKey('login'),
-        showSkip: true,
-        onDone: () => setState(() => _loginHandled = true),
       );
     } else {
       child = const MainShell(key: ValueKey('main'));
