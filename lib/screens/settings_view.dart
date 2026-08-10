@@ -16,12 +16,12 @@ import '../providers/academic_schedule_provider.dart';
 import '../providers/user_type_provider.dart';
 import '../models/user_type.dart';
 import '../supabase/neis_service.dart';
-import '../modals/neis_setup_modal.dart';
 import '../modals/birthday_manager_modal.dart';
 import '../widgets/coach_mark.dart';
 import '../widgets/school_logo.dart';
 import 'feature_intro/feature_intro_screen.dart';
 import 'how_to_guide/how_to_guide_screen.dart';
+import 'school/school_connect_screen.dart';
 
 /// 보기 설정 — 하단 nav의 한 탭으로, 다른 뷰처럼 좌우 viewer(AnimatedSwitcher)
 /// 안에서 전환되는 in-shell 뷰. (push 페이지 아님 → 자체 헤더를 그린다)
@@ -267,7 +267,7 @@ class SettingsSections extends ConsumerWidget {
                 _SchoolRow(
                   sh: sh,
                   school: school,
-                  onTap: () => showNeisSetupModal(context),
+                  onTap: () => showSchoolConnect(context),
                 ),
               SettingsRow(
                 sh: sh,

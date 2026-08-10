@@ -73,3 +73,14 @@ int maxGradeForSchoolKind(String kind) {
   if (kind.contains('초등')) return 6;
   return 3;
 }
+
+/// NEIS 학교 종류(SCHUL_KND_SC_NM)에서 사용자 유형을 유추한다.
+///
+/// 핸드오프 F1: 학교를 먼저 고르면 학교 종류에서 사용자 유형을 유추한다.
+/// 판단이 서지 않으면 null 을 돌려 사용자가 직접 고르게 둔다.
+UserType? inferUserType(String schoolKind) {
+  if (schoolKind.contains('초등')) return UserType.elementary;
+  if (schoolKind.contains('중학')) return UserType.middle;
+  if (schoolKind.contains('고등')) return UserType.high;
+  return null;
+}

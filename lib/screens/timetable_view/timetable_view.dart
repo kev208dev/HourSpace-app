@@ -18,8 +18,8 @@ import '../../providers/cell_design_provider.dart';
 import '../../providers/neis_cache_provider.dart';
 import '../../providers/academic_schedule_provider.dart';
 import '../../supabase/neis_service.dart' show NeisSchool, academicVisibleForGrade;
-import '../../modals/neis_setup_modal.dart';
 import '../../i18n/strings.dart';
+import '../school/school_connect_screen.dart';
 
 // ─── Row definition ───────────────────────────────────────────────
 
@@ -469,7 +469,7 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
                   style: AppType.body.copyWith(color: sh.ink)),
               onTap: () {
                 Navigator.pop(mctx);
-                showNeisSetupModal(context);
+                showSchoolConnect(context);
               },
             ),
             ListTile(
