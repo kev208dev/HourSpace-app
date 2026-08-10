@@ -22,6 +22,7 @@ import '../../widgets/bottom_nav_bar.dart';
 import '../login/login_screen.dart';
 import '../settings_view.dart' show SettingsSections;
 import '../calendar/categories_screen.dart';
+import '../settings/notifications_screen.dart';
 import '../timetable_view/timetable_view.dart';
 
 /// 내 정보 (핸드오프 I1 · spec §4).
@@ -124,6 +125,13 @@ class MoreScreen extends ConsumerWidget {
             icon: Icons.notifications_rounded,
             label: tr('알림'),
             sub: tr('일정·브리핑·생일'),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => const NotificationsScreen())),
+          ),
+          _Item(
+            icon: Icons.tune_rounded,
+            label: tr('앱 설정'),
+            sub: tr('보기 옵션 · 주 시작 요일'),
             onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
                 builder: (_) => const _SettingsPage())),
           ),
