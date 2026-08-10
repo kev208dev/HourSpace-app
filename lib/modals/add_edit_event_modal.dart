@@ -5,6 +5,7 @@ import '../core/theme/app_theme.dart';
 import '../core/theme/design_tokens.dart';
 import '../core/utils/date_utils.dart' as du;
 import '../core/utils/event_parser.dart';
+import '../i18n/dates.dart' as i18nd;
 import '../i18n/strings.dart';
 import '../models/event_item.dart';
 import '../models/calendar_theme.dart';
@@ -70,34 +71,23 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
 
   bool get isEdit => widget.editIndex != null;
 
+  /// 입력할 때마다 자연어를 해석해 날짜·시각에 **바로 반영**한다(스펙 §11).
+  ///
+  /// 예전에는 해석 결과를 칩으로 띄우고 사용자가 "적용"을 눌러야 반영됐다.
+  /// 자연어가 부가 기능처럼 느껴졌다. 이제 해석은 기본이고, 아래 필드를 직접
+  /// 만지면(_dateUserSet 등) 그 필드는 더 이상 덮어쓰지 않는다.
   void _onTitleChanged(String raw) {
     if (isEdit) {
       setState(() => _suggestion = null);
       return;
     }
     final p = parseEventInput(raw);
-    final hasDate = p.dateKey != null && p.dateKey != _dateKey;
-    final hasTime = p.tm != null && p.tm != _startTime;
-    final hasEnd = p.te != null && p.te != _endTime;
-    final titleChanged = p.title.isNotEmpty && p.title != raw.trim();
-    if (hasDate || hasTime || hasEnd || titleChanged) {
-      setState(() => _suggestion = p);
-    } else if (_suggestion != null) {
-      setState(() => _suggestion = null);
-    }
-  }
-
-  void _applySuggestion() {
-    final s = _suggestion;
-    if (s == null) return;
     setState(() {
-      if (s.dateKey != null) { _dateKey = s.dateKey!; _dateUserSet = true; }
-      if (s.tm != null) { _startTime = s.tm; _startUserSet = true; }
-      if (s.te != null) { _endTime = s.te; _endUserSet = true; }
-      _textCtrl.text = s.title;
-      _textCtrl.selection =
-          TextSelection.collapsed(offset: _textCtrl.text.length);
-      _suggestion = null;
+      if (p.dateKey != null && !_dateUserSet) _dateKey = p.dateKey!;
+      if (p.tm != null && !_startUserSet) _startTime = p.tm;
+      if (p.te != null && !_endUserSet) _endTime = p.te;
+      // 무엇을 알아들었는지 보여줄 게 있을 때만 요약을 남긴다.
+      _suggestion = (p.dateKey != null || p.tm != null) ? p : null;
     });
   }
 
@@ -190,6 +180,43 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
             ),
             const SizedBox(height: 14),
 
+            // 일정 내용
+            _FieldRow(
+              label: tr('무엇을 계획하고 있나요?'),
+              sh: sh,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: _textCtrl,
+                    autofocus: true,
+                    style: AppType.bodyLarge.copyWith(color: sh.ink),
+                    decoration: InputDecoration(
+                      hintText: tr('예: 내일 7시 수학학원'),
+                      hintStyle: TextStyle(color: sh.inkFaint),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    textCapitalization: TextCapitalization.sentences,
+                    onChanged: _onTitleChanged,
+                    onSubmitted: (_) => _save(),
+                  ),
+                  if (!isEdit && _suggestion != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: _UnderstoodSummary(
+                        dateKey: _dateKey,
+                        start: _startTime,
+                        end: _endTime,
+                        sh: sh,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
             // 날짜
             _FieldRow(
               label: tr('날짜'),
@@ -201,43 +228,6 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
                   style: AppType.bodyLarge
                       .copyWith(color: sh.accent, fontWeight: FontWeight.w500),
                 ),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // 일정 내용
-            _FieldRow(
-              label: tr('일정 내용'),
-              sh: sh,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: _textCtrl,
-                    autofocus: true,
-                    style: AppType.bodyLarge.copyWith(color: sh.ink),
-                    decoration: InputDecoration(
-                      hintText: tr('예: 내일 3시 회의'),
-                      hintStyle: TextStyle(color: sh.inkFaint),
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                    textCapitalization: TextCapitalization.sentences,
-                    onChanged: _onTitleChanged,
-                    onSubmitted: (_) => _save(),
-                  ),
-                  if (_suggestion != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: _ParseSuggestionChip(
-                        suggestion: _suggestion!,
-                        sh: sh,
-                        onApply: _applySuggestion,
-                        onDismiss: () => setState(() => _suggestion = null),
-                      ),
-                    ),
-                ],
               ),
             ),
             const SizedBox(height: 12),
@@ -786,59 +776,52 @@ class _RecurChip extends StatelessWidget {
   }
 }
 
-class _ParseSuggestionChip extends StatelessWidget {
-  final ParsedEvent suggestion;
+/// "이해한 내용" — 자연어에서 알아들은 날짜·시각을 그대로 보여준다.
+///
+/// 예전에는 "이렇게 해석했어요, 적용하시겠어요?" 칩이었다. 이제 해석은 이미
+/// 반영돼 있고 이 블록은 확인용이다. 틀렸으면 아래 날짜·시간 필드를 직접
+/// 고치면 되고, 그 순간부터 자연어 해석이 그 필드를 덮어쓰지 않는다.
+class _UnderstoodSummary extends StatelessWidget {
+  final String dateKey;
+  final String? start;
+  final String? end;
   final SurlapColors sh;
-  final VoidCallback onApply;
-  final VoidCallback onDismiss;
-  const _ParseSuggestionChip({
-    required this.suggestion,
+
+  const _UnderstoodSummary({
+    required this.dateKey,
+    required this.start,
+    required this.end,
     required this.sh,
-    required this.onApply,
-    required this.onDismiss,
   });
 
   @override
   Widget build(BuildContext context) {
-    final parts = <String>[];
-    if (suggestion.dateKey != null) parts.add('📅 ${suggestion.dateKey}');
-    if (suggestion.tm != null) {
-      final t = suggestion.te != null
-          ? '${suggestion.tm}~${suggestion.te}'
-          : suggestion.tm!;
-      parts.add('🕒 $t');
-    }
-    if (suggestion.title.isNotEmpty) parts.add('"${suggestion.title}"');
-    return GestureDetector(
-      onTap: onApply,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        decoration: BoxDecoration(
-          color: sh.accent.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: sh.accent.withValues(alpha: 0.35)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.auto_awesome_rounded, size: 14, color: sh.accent),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                '${parts.join(' · ')} — ${tr('적용')}',
-                style: AppType.bodySmall.copyWith(
-                    color: sh.accentInk, fontWeight: FontWeight.w700),
-                overflow: TextOverflow.ellipsis,
-              ),
+    final date = du.fromDateKey(dateKey);
+    final parts = <String>[
+      '📅 ${i18nd.monthDay(date)}',
+      if (start != null) '🕒 ${end == null ? start! : '$start~$end'}',
+    ];
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: sh.accent.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: sh.accent.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.auto_awesome_rounded, size: 14, color: sh.accent),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              '${tr('이해한 내용')} · ${parts.join('  ')}',
+              style: AppType.bodySmall.copyWith(
+                  color: sh.accentInk, fontWeight: FontWeight.w700),
+              overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(width: 6),
-            GestureDetector(
-              onTap: onDismiss,
-              behavior: HitTestBehavior.opaque,
-              child: Icon(Icons.close_rounded, size: 14, color: sh.inkSoft),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
