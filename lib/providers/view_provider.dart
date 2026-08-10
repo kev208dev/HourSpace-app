@@ -14,7 +14,7 @@ import '../core/utils/date_utils.dart' as du;
 enum AppTab { home, calendar, todos, shared, profile }
 
 /// 캘린더 탭 안의 보기 방식. 별도 화면이 아니라 같은 화면의 모드다.
-enum CalendarViewMode { month, threeDay, day }
+enum CalendarViewMode { year, month, threeDay, day }
 
 extension AppTabX on AppTab {
   String get label => switch (this) {
@@ -28,6 +28,7 @@ extension AppTabX on AppTab {
 
 extension CalendarViewModeX on CalendarViewMode {
   String get label => switch (this) {
+        CalendarViewMode.year => '연',
         CalendarViewMode.month => '월',
         CalendarViewMode.threeDay => '3일',
         CalendarViewMode.day => '하루',
@@ -169,6 +170,8 @@ class ViewNotifier extends Notifier<ViewState> {
   /// 현재 보기 방식 기준으로 한 칸 앞/뒤(월간=한 달, 3일=3일, 하루=하루).
   void step(int direction) {
     switch (state.calendarMode) {
+      case CalendarViewMode.year:
+        direction > 0 ? nextYear() : prevYear();
       case CalendarViewMode.month:
         direction > 0 ? nextMonth() : prevMonth();
       case CalendarViewMode.threeDay:

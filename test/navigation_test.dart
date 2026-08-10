@@ -27,8 +27,9 @@ void main() {
         ['홈', '캘린더', '할 일', '공유', '내 정보']);
   });
 
-  test('캘린더 보기 방식은 월/3일/하루 세 가지', () {
-    expect(CalendarViewMode.values.map((m) => m.label), ['월', '3일', '하루']);
+  test('캘린더 보기 방식은 연/월/3일/하루 네 가지', () {
+    expect(CalendarViewMode.values.map((m) => m.label),
+        ['연', '월', '3일', '하루']);
   });
 
   test('처음 열면 홈 탭, 선택 날짜는 오늘', () async {
