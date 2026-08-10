@@ -18,7 +18,7 @@ import '../utils/screenshot_util.dart';
 import '../widgets/bottom_nav_bar.dart';
 import 'calendar/calendar_screen.dart';
 import 'more/more_screen.dart';
-import 'school/school_screen.dart';
+import 'theme_share_page.dart';
 import 'today/today_screen.dart';
 import 'todo/todo_screen.dart';
 
@@ -102,11 +102,11 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 
   Widget _buildTab(AppTab tab) => switch (tab) {
-        AppTab.today => const TodayScreen(),
+        AppTab.home => const TodayScreen(),
         AppTab.calendar => const CalendarScreen(),
-        AppTab.school => const SchoolScreen(),
-        AppTab.todo => const TodoScreen(),
-        AppTab.more => const MoreScreen(),
+        AppTab.todos => const TodoScreen(),
+        AppTab.shared => const ThemeSharePage(),
+        AppTab.profile => const MoreScreen(),
       };
 }
 
