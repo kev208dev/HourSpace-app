@@ -463,6 +463,10 @@ final calendarEventsByDateProvider =
       ));
 });
 
+/// [CalendarItem] 을 기존 [EventItem] 형태로 — 아직 EventItem 을 받는 화면
+/// (읽기 전용 상세 시트 등)에 넘길 때 쓴다.
+EventItem toEventItem(CalendarItem i) => _toEventItem(i);
+
 EventItem _toEventItem(CalendarItem i) => EventItem(
       t: i.title,
       tm: i.startHhmm,

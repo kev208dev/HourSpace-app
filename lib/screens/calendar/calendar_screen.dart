@@ -8,174 +8,40 @@ import '../../core/theme/design_tokens.dart';
 import '../../core/utils/date_utils.dart' as du;
 import '../../i18n/dates.dart' as i18nd;
 import '../../i18n/strings.dart';
-import '../../providers/settings_provider.dart';
-import '../../providers/view_provider.dart';
 import '../../modals/add_edit_event_modal.dart';
-import '../../widgets/app_empty_state.dart';
-import '../../widgets/arrow_pinch.dart';
+import '../../modals/event_detail_sheet.dart';
+import '../../providers/view_provider.dart';
 import '../../widgets/bottom_nav_bar.dart';
-import '../../widgets/source_badge.dart';
-import '../../widgets/calendar_filter_strip.dart';
 import '../day_view/day_view.dart';
-import '../month_view/continuous_week_view.dart';
-import '../month_view/month_view.dart';
 import '../planner_view/planner_view.dart';
 import '../search_view.dart';
 import '../year_view/year_view.dart';
+import 'month_grid_view.dart';
 
-/// 캘린더 탭 — 월 / 3일 / 하루가 **같은 화면의 보기 방식**이다.
+/// 캘린더 탭 (핸드오프 C1~C4).
 ///
-/// 예전에는 월간·주간·일간·연간이 각각 독립 화면처럼 동작했고 헤더도 화면마다
-/// 따로 있었다. 이제 헤더(제목·이동 화살표·보기 전환·필터칩)는 여기 한 곳에만
-/// 있고, 아래 본문만 보기 방식에 따라 바뀐다.
+/// 연 · 월 · 3일 · 하루가 한 화면의 보기 모드다. 헤더(제목·이동·오늘·검색·
+/// 빠른추가 + 모드 세그먼트)는 여기 한 곳에만 있고 아래 본문만 바뀐다.
 class CalendarScreen extends ConsumerWidget {
   const CalendarScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final view = ref.watch(viewProvider);
-    final continuous = ref.watch(settingsProvider).continuousView;
-
+    final mode = ref.watch(viewProvider).calendarMode;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const _CalendarHeader(),
-        const CalendarFilterStrip(),
-        if (view.calendarMode == CalendarViewMode.month) ...[
-          // 월간에서는 날짜를 고르면 아래 아젠다가 갱신된다 — 다른 화면으로
-          // 튕겨 나가지 않는다(스펙 §7).
-          Expanded(
-            flex: 3,
-            child: continuous ? const ContinuousWeekView() : const MonthView(),
-          ),
-          Expanded(flex: 2, child: DayAgenda(dateKey: view.selectedDay)),
-        ] else
-          Expanded(
-            child: switch (view.calendarMode) {
-              CalendarViewMode.threeDay => const PlannerView(),
-              _ => DayView(dateKey: view.selectedDay),
-            },
-          ),
-      ],
-    );
-  }
-}
-
-/// 월간 그리드 아래 아젠다 — 선택된 날짜의 모든 소스를 시간순으로.
-class DayAgenda extends ConsumerWidget {
-  final String dateKey;
-  const DayAgenda({super.key, required this.dateKey});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sh = context.sh;
-    final items = ref.watch(calendarDayProvider(dateKey));
-    final date = du.fromDateKey(dateKey);
-    final isToday = du.isSameDay(date, DateTime.now());
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(Gap.lg, Gap.md, Gap.lg, Gap.xs),
-          child: Row(
-            children: [
-              Text(
-                '${i18nd.monthDay(date)} ${i18nd.weekdayShort(date.weekday)}',
-                style: AppType.cardTitle.copyWith(
-                    color: sh.ink, fontWeight: FontWeight.w800),
-              ),
-              if (isToday) ...[
-                const SizedBox(width: Gap.sm),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: sh.nowBg,
-                    borderRadius: BorderRadius.circular(Radii.pill),
-                  ),
-                  child: Text(tr('오늘'),
-                      style: AppType.label.copyWith(
-                          color: sh.now, fontWeight: FontWeight.w800)),
-                ),
-              ],
-              const Spacer(),
-              IconButton(
-                onPressed: () =>
-                    showAddEditEventModal(context, dateKey: dateKey),
-                icon: Icon(Icons.add_rounded, color: sh.accent),
-                tooltip: tr('일정 추가'),
-              ),
-            ],
-          ),
-        ),
         Expanded(
-          child: items.isEmpty
-              ? AppEmptyState(
-                  icon: Icons.event_available_rounded,
-                  title: tr('일정이 없어요'),
-                  actionText: tr('일정 추가'),
-                  onAction: () =>
-                      showAddEditEventModal(context, dateKey: dateKey),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(
-                      Gap.lg, 0, Gap.lg, kBottomNavClearance),
-                  itemCount: items.length,
-                  itemBuilder: (_, i) => _AgendaRow(item: items[i]),
-                ),
+          child: switch (mode) {
+            CalendarViewMode.year => const YearView(),
+            CalendarViewMode.month => const MonthGridView(),
+            CalendarViewMode.threeDay => const PlannerView(),
+            CalendarViewMode.day =>
+              DayView(dateKey: ref.watch(viewProvider).selectedDay),
+          },
         ),
       ],
-    );
-  }
-}
-
-class _AgendaRow extends StatelessWidget {
-  final CalendarItem item;
-  const _AgendaRow({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    final sh = context.sh;
-    return InkWell(
-      onTap: item.editable && item.localIndex != null
-          ? () => showAddEditEventModal(context,
-              dateKey: item.dateKey, editIndex: item.localIndex)
-          : null,
-      borderRadius: BorderRadius.circular(Radii.small),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 52,
-              child: Text(
-                item.startHhmm ?? tr('종일'),
-                style: AppType.sub.copyWith(color: sh.inkSoft),
-              ),
-            ),
-            Container(
-              width: 3,
-              height: 18,
-              margin: const EdgeInsets.only(right: Gap.md),
-              decoration: BoxDecoration(
-                color: item.color ?? sh.accent,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Expanded(
-              child: Text(
-                item.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppType.body
-                    .copyWith(color: sh.ink, fontWeight: FontWeight.w600),
-              ),
-            ),
-            SourceBadge(source: item.source, color: item.color),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -185,93 +51,87 @@ class _CalendarHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final sh = context.sh;
     final view = ref.watch(viewProvider);
-    final notifier = ref.read(viewProvider.notifier);
+    final n = ref.read(viewProvider.notifier);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(Gap.lg, Gap.sm, Gap.lg, Gap.xs),
-          child: Row(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Gap.lg, Gap.sm, Gap.lg, Gap.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Expanded(child: _Title(view: view)),
-              ArrowPinch(
-                onPrev: () => notifier.step(-1),
-                onNext: () => notifier.step(1),
-              ),
-              const SizedBox(width: 2),
-              _OverflowMenu(
-                onSearch: () => showSearchSheet(context),
-                onToday: notifier.goToToday,
-                onYear: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const _YearPage(),
-                  ),
-                ),
+              _Caret(icon: Icons.chevron_left_rounded, onTap: () => n.step(-1)),
+              Text(_title(view),
+                  style: AppType.display.copyWith(
+                      fontSize: 22, letterSpacing: -0.44, color: sh.ink)),
+              _Caret(icon: Icons.chevron_right_rounded, onTap: () => n.step(1)),
+              const Spacer(),
+              _GhostButton(label: tr('오늘'), onTap: n.goToToday),
+              _Caret(
+                  icon: Icons.search_rounded,
+                  onTap: () => showSearchSheet(context)),
+              _Caret(
+                icon: Icons.bolt_rounded,
+                onTap: () => showAddEditEventModal(context,
+                    dateKey: view.selectedDay),
               ),
             ],
           ),
-        ),
-        const Padding(
-          padding: EdgeInsets.fromLTRB(Gap.lg, Gap.xs, Gap.lg, Gap.sm),
-          child: CalendarModeSegment(),
-        ),
-      ],
-    );
-  }
-}
-
-/// 헤더 제목. 월간은 연·월, 3일/하루는 선택된 날짜를 보여준다.
-/// 탭하면 오늘로 돌아온다.
-class _Title extends ConsumerWidget {
-  final ViewState view;
-  const _Title({required this.view});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sh = context.sh;
-    final selected = du.fromDateKey(view.selectedDay);
-    final isMonth = view.calendarMode == CalendarViewMode.month;
-    final headline =
-        isMonth ? i18nd.monthName(view.viewMonth) : i18nd.monthDay(selected);
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: ref.read(viewProvider.notifier).goToToday,
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        alignment: Alignment.centerLeft,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              isMonth ? '${view.viewYear}' : '${selected.year}',
-              style: AppType.label.copyWith(
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-                color: sh.inkSoft,
-              ),
-            ),
-            Text(
-              headline,
-              style: const TextStyle(
-                fontFamily: 'Pretendard',
-                fontSize: 32,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -1.2,
-                height: 1.05,
-              ).copyWith(color: sh.ink),
-            ),
-          ],
-        ),
+          const SizedBox(height: Gap.sm),
+          const CalendarModeSegment(),
+        ],
       ),
     );
   }
+
+  String _title(ViewState v) {
+    if (v.calendarMode == CalendarViewMode.year) return '${v.viewYear}년';
+    if (v.calendarMode == CalendarViewMode.month) {
+      return '${v.viewYear}년 ${v.viewMonth}월';
+    }
+    final d = du.fromDateKey(v.selectedDay);
+    return '${d.month}월 ${d.day}일';
+  }
 }
 
-/// 보기 방식 전환 — 월 / 3일 / 하루.
+class _Caret extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _Caret({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => InkResponse(
+        onTap: onTap,
+        radius: 20,
+        child: Padding(
+          padding: const EdgeInsets.all(5),
+          child: Icon(icon, size: 19, color: context.sh.ink),
+        ),
+      );
+}
+
+class _GhostButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _GhostButton({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(Radii.pill),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          child: Text(label,
+              style: AppType.sub.copyWith(
+                  fontWeight: FontWeight.w600, color: context.sh.accent)),
+        ),
+      );
+}
+
+/// 보기 모드 세그먼트 — 연 · 월 · 3일 · 하루.
+/// 선택은 accent 채움 + bg 글자, 사이는 divider 세로선.
 class CalendarModeSegment extends ConsumerWidget {
   const CalendarModeSegment({super.key});
 
@@ -279,126 +139,157 @@ class CalendarModeSegment extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sh = context.sh;
     final current = ref.watch(viewProvider).calendarMode;
-    final notifier = ref.read(viewProvider.notifier);
+    final n = ref.read(viewProvider.notifier);
+    const modes = CalendarViewMode.values;
 
     return Container(
-      height: 36,
-      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: sh.card2,
-        borderRadius: BorderRadius.circular(Radii.pill),
         border: Border.all(color: sh.border),
+        borderRadius: BorderRadius.circular(Radii.md),
       ),
-      child: Row(
-        children: [
-          for (final mode in CalendarViewMode.values)
-            Expanded(
-              child: Semantics(
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < modes.length; i++)
+              Semantics(
                 button: true,
-                selected: mode == current,
+                selected: modes[i] == current,
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: () => notifier.setCalendarMode(mode),
-                  child: AnimatedContainer(
-                    duration: Motion.fast,
-                    curve: Motion.curve,
-                    alignment: Alignment.center,
+                  onTap: () => n.setCalendarMode(modes[i]),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 15, vertical: 6),
                     decoration: BoxDecoration(
-                      color: mode == current ? sh.card : Colors.transparent,
-                      borderRadius: BorderRadius.circular(Radii.pill),
-                      boxShadow: mode == current ? sh.shadowCard : null,
+                      color: modes[i] == current ? sh.accent : Colors.transparent,
+                      border: i == 0
+                          ? null
+                          : Border(left: BorderSide(color: sh.border)),
                     ),
                     child: Text(
-                      tr(mode.label),
+                      tr(modes[i].label),
                       style: AppType.sub.copyWith(
-                        fontWeight:
-                            mode == current ? FontWeight.w800 : FontWeight.w600,
-                        color: mode == current ? sh.accentInk : sh.inkSoft,
-                      ),
+                          color: modes[i] == current ? sh.bg : sh.ink),
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _OverflowMenu extends StatelessWidget {
-  final VoidCallback onSearch;
-  final VoidCallback onToday;
-  final VoidCallback onYear;
-
-  const _OverflowMenu({
-    required this.onSearch,
-    required this.onToday,
-    required this.onYear,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sh = context.sh;
-    return PopupMenuButton<String>(
-      icon: Icon(Icons.more_vert_rounded, size: 20, color: sh.inkSoft),
-      padding: EdgeInsets.zero,
-      tooltip: tr('더보기'),
-      color: sh.card,
-      onSelected: (v) => switch (v) {
-        'search' => onSearch(),
-        'today' => onToday(),
-        'year' => onYear(),
-        _ => null,
-      },
-      itemBuilder: (_) => [
-        _menuItem('search', Icons.search_rounded, tr('검색'), sh),
-        _menuItem('today', Icons.today_rounded, tr('오늘로'), sh),
-        _menuItem('year', Icons.calendar_view_month_rounded, tr('연간 보기'), sh),
-      ],
-    );
-  }
-
-  PopupMenuItem<String> _menuItem(
-          String value, IconData icon, String label, SurlapColors sh) =>
-      PopupMenuItem(
-        value: value,
-        child: Row(children: [
-          Icon(icon, size: 18, color: sh.inkSoft),
-          const SizedBox(width: 10),
-          Text(label, style: TextStyle(color: sh.ink)),
-        ]),
-      );
-}
-
-/// 연간 보기 — 자주 쓰지 않아 탭이 아니라 별도 화면으로 뺐다.
-class _YearPage extends ConsumerWidget {
-  const _YearPage();
+/// 월 보기 아래 "선택한 날짜" 목록 (핸드오프 C2).
+class SelectedDayList extends ConsumerWidget {
+  final String dateKey;
+  const SelectedDayList({super.key, required this.dateKey});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sh = context.sh;
-    final view = ref.watch(viewProvider);
-    final notifier = ref.read(viewProvider.notifier);
-    return Scaffold(
-      backgroundColor: sh.bg,
-      appBar: AppBar(
-        backgroundColor: sh.bg,
-        title: Text('${view.viewYear}'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left_rounded),
-            onPressed: notifier.prevYear,
-            tooltip: tr('이전 해'),
+    final items = ref.watch(calendarDayProvider(dateKey));
+    final date = du.fromDateKey(dateKey);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Gap.sm, Gap.lg, Gap.sm, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(tr('선택한 날짜'),
+                  style: AppType.label.copyWith(color: sh.accent)),
+              const SizedBox(width: Gap.sm),
+              Text(
+                '${date.month}월 ${date.day}일 '
+                '${i18nd.weekdayShort(date.weekday)}',
+                style: AppType.body.copyWith(color: sh.ink),
+              ),
+              const Spacer(),
+              _GhostButton(
+                label: tr('하루 보기'),
+                onTap: () => ref
+                    .read(viewProvider.notifier)
+                    .setCalendarMode(CalendarViewMode.day),
+              ),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.chevron_right_rounded),
-            onPressed: notifier.nextYear,
-            tooltip: tr('다음 해'),
-          ),
+          if (items.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: Gap.sm),
+              child: Text(tr('항목이 없어 한 번 더 누르면 바로 이동합니다.'),
+                  style: AppType.sub
+                      .copyWith(color: sh.ink.withValues(alpha: 0.45))),
+            )
+          else
+            for (final item in items) _SelectedRow(item: item),
         ],
       ),
-      body: const YearView(),
     );
   }
 }
+
+class _SelectedRow extends StatelessWidget {
+  final CalendarItem item;
+  const _SelectedRow({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final sh = context.sh;
+    final editable = item.editable && item.localIndex != null;
+    return InkWell(
+      onTap: () => editable
+          ? showAddEditEventModal(context,
+              dateKey: item.dateKey, editIndex: item.localIndex)
+          : showEventDetailSheet(context, toEventItem(item)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 7),
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              Container(
+                width: 3,
+                decoration: BoxDecoration(
+                  color: item.color ?? sh.accent,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              const SizedBox(width: 9),
+              SizedBox(
+                width: 76,
+                child: Text(item.startHhmm ?? tr('종일'),
+                    style: AppType.sub.copyWith(
+                        fontSize: 12,
+                        color: sh.ink.withValues(alpha: 0.58))),
+              ),
+              Expanded(
+                child: Text(item.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppType.body
+                        .copyWith(fontSize: 13.5, color: sh.ink)),
+              ),
+              if (!item.editable)
+                Icon(Icons.lock_outline_rounded,
+                    size: 12, color: sh.ink.withValues(alpha: 0.40)),
+              const SizedBox(width: 6),
+              Text(tr(item.source.badgeLabel),
+                  style: AppType.micro.copyWith(
+                      fontWeight: FontWeight.w400,
+                      color: sh.ink.withValues(alpha: 0.42))),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 캘린더 본문의 하단 여백 — 탭바에 가리지 않도록.
+const double kCalendarBottomPad = kBottomNavClearance;
