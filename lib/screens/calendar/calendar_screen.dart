@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/calendar/calendar_item.dart';
+import '../../core/calendar/calendar_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/design_tokens.dart';
 import '../../core/utils/date_utils.dart' as du;
@@ -8,7 +10,10 @@ import '../../i18n/dates.dart' as i18nd;
 import '../../i18n/strings.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/view_provider.dart';
+import '../../modals/add_edit_event_modal.dart';
 import '../../widgets/arrow_pinch.dart';
+import '../../widgets/bottom_nav_bar.dart';
+import '../../widgets/source_badge.dart';
 import '../../widgets/calendar_filter_strip.dart';
 import '../day_view/day_view.dart';
 import '../month_view/continuous_week_view.dart';
@@ -35,15 +40,138 @@ class CalendarScreen extends ConsumerWidget {
       children: [
         const _CalendarHeader(),
         const CalendarFilterStrip(),
+        if (view.calendarMode == CalendarViewMode.month) ...[
+          // 월간에서는 날짜를 고르면 아래 아젠다가 갱신된다 — 다른 화면으로
+          // 튕겨 나가지 않는다(스펙 §7).
+          Expanded(
+            flex: 3,
+            child: continuous ? const ContinuousWeekView() : const MonthView(),
+          ),
+          Expanded(flex: 2, child: DayAgenda(dateKey: view.selectedDay)),
+        ] else
+          Expanded(
+            child: switch (view.calendarMode) {
+              CalendarViewMode.threeDay => const PlannerView(),
+              _ => DayView(dateKey: view.selectedDay),
+            },
+          ),
+      ],
+    );
+  }
+}
+
+/// 월간 그리드 아래 아젠다 — 선택된 날짜의 모든 소스를 시간순으로.
+class DayAgenda extends ConsumerWidget {
+  final String dateKey;
+  const DayAgenda({super.key, required this.dateKey});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sh = context.sh;
+    final items = ref.watch(calendarDayProvider(dateKey));
+    final date = du.fromDateKey(dateKey);
+    final isToday = du.isSameDay(date, DateTime.now());
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(Gap.lg, Gap.md, Gap.lg, Gap.xs),
+          child: Row(
+            children: [
+              Text(
+                '${i18nd.monthDay(date)} ${i18nd.weekdayShort(date.weekday)}',
+                style: AppType.titleMedium.copyWith(
+                    color: sh.ink, fontWeight: FontWeight.w800),
+              ),
+              if (isToday) ...[
+                const SizedBox(width: Gap.sm),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: sh.nowBg,
+                    borderRadius: BorderRadius.circular(Radii.pill),
+                  ),
+                  child: Text(tr('오늘'),
+                      style: AppType.labelMedium.copyWith(
+                          color: sh.now, fontWeight: FontWeight.w800)),
+                ),
+              ],
+              const Spacer(),
+              IconButton(
+                onPressed: () =>
+                    showAddEditEventModal(context, dateKey: dateKey),
+                icon: Icon(Icons.add_rounded, color: sh.accent),
+                tooltip: tr('일정 추가'),
+              ),
+            ],
+          ),
+        ),
         Expanded(
-          child: switch (view.calendarMode) {
-            CalendarViewMode.month =>
-              continuous ? const ContinuousWeekView() : const MonthView(),
-            CalendarViewMode.threeDay => const PlannerView(),
-            CalendarViewMode.day => DayView(dateKey: view.selectedDay),
-          },
+          child: items.isEmpty
+              ? Center(
+                  child: Text(tr('일정이 없어요'),
+                      style: AppType.bodyLarge.copyWith(color: sh.inkFaint)),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(
+                      Gap.lg, 0, Gap.lg, kBottomNavClearance),
+                  itemCount: items.length,
+                  itemBuilder: (_, i) => _AgendaRow(item: items[i]),
+                ),
         ),
       ],
+    );
+  }
+}
+
+class _AgendaRow extends StatelessWidget {
+  final CalendarItem item;
+  const _AgendaRow({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final sh = context.sh;
+    return InkWell(
+      onTap: item.editable && item.localIndex != null
+          ? () => showAddEditEventModal(context,
+              dateKey: item.dateKey, editIndex: item.localIndex)
+          : null,
+      borderRadius: BorderRadius.circular(Radii.small),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 52,
+              child: Text(
+                item.startHhmm ?? tr('종일'),
+                style: AppType.bodyMedium.copyWith(color: sh.inkSoft),
+              ),
+            ),
+            Container(
+              width: 3,
+              height: 18,
+              margin: const EdgeInsets.only(right: Gap.md),
+              decoration: BoxDecoration(
+                color: item.color ?? sh.accent,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                item.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppType.bodyLarge
+                    .copyWith(color: sh.ink, fontWeight: FontWeight.w600),
+              ),
+            ),
+            SourceBadge(source: item.source, color: item.color),
+          ],
+        ),
+      ),
     );
   }
 }

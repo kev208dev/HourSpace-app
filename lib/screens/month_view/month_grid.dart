@@ -36,7 +36,9 @@ class MonthGrid extends StatefulWidget {
   final Map<String, RecordTemplate> templatesById;
   final void Function(DateTime) onDayTap;
   final void Function(DateTime) onDayLongPress;
-  final void Function(DateTime)? onDayDoubleTap;
+
+  /// 선택된 날짜 'YYYY-MM-DD'. 그 날이 있는 주가 자동으로 펼쳐진다.
+  final String? selectedKey;
   final bool heroCells;
   /// 한 칸 높이 배율. 1.0=현재 화면 6주 균등분배(스크롤 없음).
   /// 1.0 초과 → 그리드가 세로로 커지며 스크롤 가능. 1.0 미만 → 좀 더 빽빽.
@@ -60,7 +62,7 @@ class MonthGrid extends StatefulWidget {
     this.templatesById = const {},
     required this.onDayTap,
     required this.onDayLongPress,
-    this.onDayDoubleTap,
+    this.selectedKey,
     this.heroCells = false,
     this.cellHeightFactor = 1.0,
   });
@@ -132,17 +134,12 @@ class _MonthGridState extends State<MonthGrid> {
     );
   }
 
+  // 탭은 언제나 "그 날짜 선택" 하나만 뜻한다(스펙 §8). 예전에는 같은 셀을
+  // 다시 누르면 접히고, 바가 있는 줄이면 선택 대신 펼치기가 되는 등 한 제스처가
+  // 세 가지 뜻을 가졌다. 여러 날 바가 있는 줄은 선택되면 자동으로 펼쳐진다.
   void _onCellTap(int row, DateTime date, bool rowHasBars) {
-    if (_expandedRow == row) {
-      setState(() => _expandedRow = null);
-      return;
-    }
-    if (rowHasBars) {
-      setState(() => _expandedRow = row);
-    } else {
-      if (_expandedRow != null) setState(() => _expandedRow = null);
-      widget.onDayTap(date);
-    }
+    setState(() => _expandedRow = rowHasBars ? row : null);
+    widget.onDayTap(date);
   }
 
   @override
@@ -303,11 +300,9 @@ class _MonthGridState extends State<MonthGrid> {
         showPast: widget.showPast,
         hasCircle: widget.circles.contains(du.toDateKey(cellDate)),
         recordBadges: _badgesFor(cellDate),
+        isSelected: widget.selectedKey == du.toDateKey(cellDate),
         onTap: () => _onCellTap(row, cellDate, rowHasBars),
         onLongPress: () => widget.onDayLongPress(cellDate),
-        onDoubleTap: widget.onDayDoubleTap == null
-            ? null
-            : () => widget.onDayDoubleTap!(cellDate),
         heroDateNumber: widget.heroCells,
       ),
     );

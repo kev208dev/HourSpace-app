@@ -29,7 +29,8 @@ class DayCell extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onLongPress;
   /// 더블탭 → 동그라미 토글.
-  final VoidCallback? onDoubleTap;
+  /// 선택된 날짜인가 — 테두리로 표시한다.
+  final bool isSelected;
   /// 셀 탭 시 날짜 숫자가 액션 시트 헤더로 줌인되는 Hero 전환.
   /// 연속 보기는 같은 날짜가 여러 그리드에 중복 렌더되어 태그가 충돌하므로 끈다.
   final bool heroDateNumber;
@@ -51,7 +52,7 @@ class DayCell extends StatelessWidget {
     this.recordBadges = const [],
     required this.onTap,
     required this.onLongPress,
-    this.onDoubleTap,
+    this.isSelected = false,
     this.heroDateNumber = false,
     this.topReserve = 0,
   });
@@ -118,15 +119,17 @@ class DayCell extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       onLongPress: onLongPress,
-      onDoubleTap: onDoubleTap,
       child: Container(
         clipBehavior: Clip.hardEdge,
         decoration: BoxDecoration(
           // 기록 템플릿 적용 기간만 옅은 배경 하이라이트. 오늘 칸은 셀 색 변경 없이
           // 숫자의 글로우로만 표현.
-          color: recordBadges.isNotEmpty
-              ? sh.accent.withValues(alpha: sh.dark ? 0.06 : 0.04)
-              : Colors.transparent,
+          // 선택된 날짜는 옅은 accent 배경으로 표시(탭 = 선택이라는 피드백).
+          color: isSelected
+              ? sh.accent.withValues(alpha: sh.dark ? 0.16 : 0.10)
+              : recordBadges.isNotEmpty
+                  ? sh.accent.withValues(alpha: sh.dark ? 0.06 : 0.04)
+                  : Colors.transparent,
           // 칸 구분 격자선 — 가로+세로 모두, 또렷하게.
           border: Border(
             bottom: BorderSide(

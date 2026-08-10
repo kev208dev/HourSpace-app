@@ -447,6 +447,38 @@ List<CalendarItem> calendarItemsInRange(
   return out;
 }
 
+/// 통합 결과를 기존 [EventItem] 형태로 되돌린 어댑터.
+///
+/// 월간 그리드(`month_grid`/`day_cell`/`event_chip`/`multiday_span`)는 아직
+/// [EventItem] 을 받는다. 그 위젯들을 한 번에 뜯지 않고도 병합·필터 중복을
+/// 없애기 위한 다리다 — 화면은 더 이상 소스를 직접 합치지 않는다.
+///
+/// 새 코드는 [calendarItemsByDateProvider] 를 직접 쓴다.
+final calendarEventsByDateProvider =
+    Provider<Map<String, List<EventItem>>>((ref) {
+  final byDate = ref.watch(calendarItemsByDateProvider);
+  return byDate.map((dateKey, items) => MapEntry(
+        dateKey,
+        items.map(_toEventItem).toList(),
+      ));
+});
+
+EventItem _toEventItem(CalendarItem i) => EventItem(
+      t: i.title,
+      tm: i.startHhmm,
+      te: i.endHhmm,
+      th: i.calendarId,
+      id: i.id,
+      createdAt: i.createdAt,
+      rr: i.recurrenceRule,
+      academic: i.source == CalendarSource.schoolAcademic,
+      birthday: i.source == CalendarSource.birthday,
+      sport: i.source == CalendarSource.sports,
+      sportColor: i.source == CalendarSource.sports ? i.color?.toARGB32() : null,
+      sportEmoji: i.metadata['emoji'] as String?,
+      sportLogo: i.metadata['logo'] as String?,
+    );
+
 // ─────────────────────────────────────────────────────────────────────
 // 파생 조회
 // ─────────────────────────────────────────────────────────────────────

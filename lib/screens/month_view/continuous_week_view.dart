@@ -1,25 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/calendar/calendar_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/date_utils.dart' as du;
 import '../../models/event_item.dart';
 import '../../models/calendar_theme.dart';
 import '../../models/record_template.dart';
-import '../../supabase/neis_service.dart';
 import '../../providers/view_provider.dart';
-import '../../providers/events_provider.dart';
 import '../../providers/themes_provider.dart';
 import '../../providers/settings_provider.dart';
-import '../../providers/filter_provider.dart';
 import '../../providers/extras_provider.dart';
 import '../../providers/day_widget_provider.dart';
-import '../../providers/birthdays_provider.dart';
-import '../../providers/academic_schedule_provider.dart';
 import '../../providers/template_ranges_provider.dart';
 import '../../providers/record_templates_provider.dart';
-import '../../providers/sports_provider.dart';
-import '../../providers/shared_theme_events_provider.dart';
 import '../../widgets/header_collapse.dart';
 import '../../modals/day_action_sheet.dart';
 import 'day_cell.dart';
@@ -197,18 +191,15 @@ class _WeekRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final events = ref.watch(eventsProvider);
+    // 병합·필터는 통합 계층이 끝냈다 — 여기서 소스를 다시 합치지 않는다.
+    final byDate = ref.watch(calendarEventsByDateProvider);
+    final selectedKey = ref.watch(viewProvider).selectedDay;
     final themes = ref.watch(themesProvider);
-    final hiddenThemes = ref.watch(filterProvider);
     final circles = ref.watch(circlesProvider);
-    final academic = ref.watch(academicScheduleProvider);
     final widgetValues = ref.watch(widgetValuesProvider);
     final dayTemplates = ref.watch(dayTemplatesProvider);
     final templateRanges = ref.watch(templateRangesProvider);
     final templatesById = ref.watch(recordTemplatesByIdProvider);
-    final birthdays = ref.watch(birthdaysProvider);
-    final sportsByDate = ref.watch(sportsEventsByDateProvider);
-    final sharedByDate = ref.watch(sharedThemeEventsByDateProvider);
     final sh = context.sh;
 
     // 월 경계 구분선 색 — 부드러운 계단선은 아래 CustomPaint로 그린다.
@@ -218,37 +209,9 @@ class _WeekRow extends ConsumerWidget {
         7, (i) => DateTime(weekStart.year, weekStart.month, weekStart.day + i));
     final keys = weekDates.map(du.toDateKey).toList();
 
-    bool visible(EventItem item) {
-      if (hiddenThemes.isEmpty) return true;
-      final ids = item.themeIds;
-      if (ids.isEmpty) return !hiddenThemes.contains('__none__');
-      return ids.every((id) => !hiddenThemes.contains(id));
-    }
-
-    // 내 학년 — 다른 학년 학사일정 숨김용.
-    final grade = NeisSchool.load()?.grade;
-    // 칸별 일정(필터 + 생일/학사 병합).
+    // 칸별 일정 — 통합 계층 결과를 그대로 쓴다.
     final colEvents = <List<EventItem>>[
-      for (int i = 0; i < 7; i++)
-        <EventItem>[
-          ...(events[keys[i]] ?? []).where(visible),
-          if (!hiddenThemes.contains(birthdayThemeId))
-            ...birthdays
-                .where((b) =>
-                    b.month == weekDates[i].month && b.day == weekDates[i].day)
-                .map((b) =>
-                    EventItem(t: b.name, th: birthdayThemeId, birthday: true)),
-          if (!hiddenThemes.contains(academicThemeId))
-            ...(academic[keys[i]] ?? const [])
-                .where((n) => academicVisibleForGrade(n, grade))
-                .map((n) =>
-                    EventItem(t: n, th: academicThemeId, academic: true)),
-          ...(sportsByDate[keys[i]] ?? const <EventItem>[])
-              .where((e) => !hiddenThemes.contains(e.themeIds.first)),
-          ...(sharedByDate[keys[i]] ?? const <EventItem>[]).where((e) =>
-              e.themeIds.isNotEmpty &&
-              !hiddenThemes.contains(e.themeIds.first)),
-        ],
+      for (int i = 0; i < 7; i++) [...?byDate[keys[i]]],
     ];
 
     // 같은 이름이 연속된 날에 있으면 하나의 긴 막대로 병합.
@@ -332,11 +295,10 @@ class _WeekRow extends ConsumerWidget {
           dateWidgetValues: widgetValues[key] ?? {},
           recordBadges: badges,
           topReserve: reserve,
-          // 탭: 그 주(주간 뷰)로 이동. 꾹누름: 위젯/일정 추가 메뉴.
-          onTap: () => ref.read(viewProvider.notifier).openThreeDay(key),
+          // 제스처는 둘뿐 — 탭=선택, 길게=빠른 추가(스펙 §8).
+          isSelected: selectedKey == key,
+          onTap: () => ref.read(viewProvider.notifier).selectDay(key),
           onLongPress: () => _handleDayTap(context, ref, date),
-          onDoubleTap: () =>
-              ref.read(circlesProvider.notifier).toggle(key),
         );
 
         // 매월 1일 셀에 월 라벨 오버레이 (달 경계 표시)
