@@ -8,7 +8,6 @@ import '../../core/theme/design_tokens.dart';
 import '../../core/utils/date_utils.dart' as du;
 import '../../i18n/dates.dart' as i18nd;
 import '../../i18n/strings.dart';
-import '../../modals/neis_setup_modal.dart';
 import '../../providers/academic_schedule_provider.dart';
 import '../../providers/neis_cache_provider.dart';
 import '../../providers/view_provider.dart';
@@ -17,6 +16,7 @@ import '../../widgets/bottom_nav_bar.dart';
 import '../../widgets/school_logo.dart';
 import '../../widgets/section_header.dart';
 import '../timetable_view/timetable_view.dart';
+import '../school/school_connect_screen.dart';
 
 /// 학교 탭 — "오늘 학교에서 뭐 하지?" 하나에 답한다.
 ///
@@ -75,7 +75,7 @@ class SchoolScreen extends ConsumerWidget {
         ),
         Center(
           child: TextButton(
-            onPressed: () => showNeisSetupModal(context),
+            onPressed: () => showSchoolConnect(context),
             style: TextButton.styleFrom(foregroundColor: sh.inkSoft),
             child: Text(tr('학교 변경')),
           ),
@@ -313,7 +313,7 @@ class _NotConnected extends StatelessWidget {
             ),
             const SizedBox(height: Gap.xl),
             FilledButton(
-              onPressed: () => showNeisSetupModal(context),
+              onPressed: () => showSchoolConnect(context),
               child: Text(tr('학교 연결')),
             ),
           ],

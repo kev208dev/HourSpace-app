@@ -7,7 +7,6 @@ import '../../i18n/strings.dart';
 import '../../modals/backup_modal.dart';
 import '../../modals/birthday_manager_modal.dart';
 import '../../modals/day_template_manager_modal.dart';
-import '../../modals/neis_setup_modal.dart';
 import '../../modals/record_template_sheet.dart';
 import '../../modals/sports_subscribe_sheet.dart';
 import '../../providers/birthdays_provider.dart';
@@ -24,6 +23,7 @@ import '../settings_view.dart' show SettingsSections;
 import '../calendar/categories_screen.dart';
 import '../settings/notifications_screen.dart';
 import '../timetable_view/timetable_view.dart';
+import '../school/school_connect_screen.dart';
 
 /// 내 정보 (핸드오프 I1 · spec §4).
 ///
@@ -75,7 +75,7 @@ class MoreScreen extends ConsumerWidget {
                 ? tr('초·중·고 사용자만')
                 : trf('{0} {1}학년 {2}반',
                     [school.name, school.grade, school.classNm]),
-            onTap: () => showNeisSetupModal(context),
+            onTap: () => showSchoolConnect(context),
           ),
           _Item(
             icon: Icons.grid_on_rounded,

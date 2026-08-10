@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/design_tokens.dart';
 import '../../i18n/strings.dart';
-import '../../modals/neis_setup_modal.dart';
 import '../../supabase/neis_service.dart' show NeisSchool;
 import '../../widgets/surlap_logo.dart';
+import '../school/school_connect_screen.dart';
 
 /// 첫 실행 — 두 걸음이면 끝난다(스펙 §28).
 ///
@@ -29,7 +29,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   _Step _step = _Step.intro;
 
   Future<void> _connectSchool() async {
-    await showNeisSetupModal(context);
+    await showSchoolConnect(context);
     if (!mounted) return;
     // 연결에 성공했으면 곧장 Today 로 — 이 순간이 첫 성공 경험이다.
     if (NeisSchool.load() != null) widget.onDone();
