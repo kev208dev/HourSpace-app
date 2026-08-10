@@ -174,6 +174,23 @@ class SurlapColors extends ThemeExtension<SurlapColors> {
   // 주말 색 — 너무 튀지 않는 soft red / soft blue
   Color get sat      => preset.dark ? const Color(0xFF8AAAC8) : const Color(0xFF5C7CFA);
   Color get sun      => preset.dark ? const Color(0xFFD98A8A) : const Color(0xFFE86A6A);
+  // ── 시맨틱 색 ─────────────────────────────────────────────────
+  // accent(퍼플) = 선택 / 버튼 / 주요 interaction
+  // now(라임)    = 지금 / 오늘  ← 이 의미로만 쓴다
+  // danger(코랄) = 경고 / 충돌 / 파괴적 액션
+  //
+  // [now] 는 "지금 진행 중", "오늘 날짜", "현재 시각 인디케이터", "현재 교시"
+  // 에만 쓴다. 하단 내비 선택 상태처럼 일반적인 활성 표시에는 쓰지 않는다 —
+  // 아무 데나 쓰면 "라임 = 지금"이라는 신호가 사라진다.
+  Color get now =>
+      preset.dark ? const Color(0xFFA9E34B) : const Color(0xFF74B816);
+
+  /// [now] 위에 얹는 글자색.
+  Color get onNow => preset.dark ? const Color(0xFF14131A) : Colors.white;
+
+  /// [now] 의 옅은 배경(뱃지·칩).
+  Color get nowBg => now.withValues(alpha: preset.dark ? 0.22 : 0.14);
+
   // 파괴적 액션용 (삭제 등)
   Color get danger   => const Color(0xFFD9614E);
   // NEIS 학사일정 — 기존 일정과 구분되는 청록 톤.

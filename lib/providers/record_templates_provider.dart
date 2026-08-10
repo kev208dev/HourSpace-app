@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/constants/storage_keys.dart';
 import '../models/record_template.dart';
 import '../storage/local_store.dart';
+import 'template_ranges_provider.dart';
 
 /// 사용자 정의 기록 템플릿(커스텀만 저장). 프리셋은 코드 상수.
 class RecordTemplatesNotifier extends Notifier<List<RecordTemplate>> {
@@ -44,6 +45,22 @@ final allRecordTemplatesProvider = Provider<List<RecordTemplate>>(
 /// id → 템플릿 빠른 조회(셀 뱃지/입력 시트용).
 final recordTemplatesByIdProvider = Provider<Map<String, RecordTemplate>>(
     (ref) => {for (final t in ref.watch(allRecordTemplatesProvider)) t.id: t});
+
+/// 그 날짜에 적용 중인 기록 템플릿(중복 제거).
+///
+/// 오늘 화면·날짜 액션 시트·기록 화면이 각자 적용 기간을 훑던 것을 한 곳으로.
+final activeRecordTemplatesProvider =
+    Provider.family<List<RecordTemplate>, String>((ref, dateKey) {
+  final byId = ref.watch(recordTemplatesByIdProvider);
+  final out = <RecordTemplate>[];
+  final seen = <String>{};
+  for (final r in ref.watch(templateRangesProvider)) {
+    if (!r.covers(dateKey) || !seen.add(r.templateId)) continue;
+    final tpl = byId[r.templateId];
+    if (tpl != null) out.add(tpl);
+  }
+  return out;
+});
 
 // ─── 마이그레이션 ───────────────────────────────────────────────────────
 // 구버전 공부 데이터(studyHours/subjects/note) → 일반 구조(primary/tags/memo).

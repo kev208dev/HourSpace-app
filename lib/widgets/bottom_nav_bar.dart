@@ -2,67 +2,38 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme/app_theme.dart';
+import '../core/theme/design_tokens.dart';
 import '../i18n/strings.dart';
 import '../providers/view_provider.dart';
 import 'coach_mark.dart';
 
-// ─── Liquid Glass Floating Bottom Navigation (2026 리디자인) ─────
-// 떠 있는 캡슐. 비활성 = 아이콘만, 활성 = 아이콘 + 라벨 알약(accent).
+/// 하단 내비게이션 — 오늘 / 캘린더 / 학교 / 할 일 / 더보기.
+///
+/// 선택 상태는 accent(퍼플)로 표시한다. `sh.now`(라임)는 "지금/오늘"이라는
+/// 의미 전용이라 여기에는 쓰지 않는다 — 아무 데나 쓰면 신호가 죽는다.
 class SurlapBottomNav extends ConsumerWidget {
   const SurlapBottomNav({super.key});
 
+  static const _icons = {
+    AppTab.today: Icons.wb_sunny_rounded,
+    AppTab.calendar: Icons.calendar_month_rounded,
+    AppTab.school: Icons.school_rounded,
+    AppTab.todo: Icons.check_circle_rounded,
+    AppTab.more: Icons.more_horiz_rounded,
+  };
+
+  static final _coachKeys = {
+    AppTab.school: coachKeyTabTimetable,
+    AppTab.more: coachKeyTabProfile,
+  };
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final view = ref.watch(viewProvider);
+    final current = ref.watch(viewProvider).tab;
     final notifier = ref.read(viewProvider.notifier);
     final sh = context.sh;
     final dark = sh.dark;
 
-    final tabs = <_Tab>[
-      _Tab(
-        icon: Icons.home_rounded,
-        label: tr('홈'),
-        active: view.mode == ViewMode.home,
-        onTap: () => notifier.setMode(ViewMode.home),
-      ),
-      _Tab(
-        icon: Icons.calendar_month_rounded,
-        label: tr('캘린더'),
-        active: const {
-          ViewMode.events,
-          ViewMode.year,
-          ViewMode.planner,
-          ViewMode.day,
-        }.contains(view.mode),
-        onTap: () => notifier.setMode(ViewMode.events),
-      ),
-      _Tab(
-        icon: Icons.grid_view_rounded,
-        label: tr('스케줄'),
-        active: view.mode == ViewMode.timetable,
-        onTap: () => notifier.setMode(ViewMode.timetable),
-        coachKey: coachKeyTabTimetable,
-      ),
-      _Tab(
-        icon: Icons.palette_rounded,
-        label: tr('공유'),
-        active: view.mode == ViewMode.themes,
-        onTap: () => notifier.setMode(ViewMode.themes),
-      ),
-      _Tab(
-        icon: Icons.person_rounded,
-        label: tr('프로필'),
-        active: view.mode == ViewMode.profile ||
-            view.mode == ViewMode.settings,
-        onTap: () => notifier.setMode(ViewMode.profile),
-        coachKey: coachKeyTabProfile,
-      ),
-    ];
-
-    final accent = dark ? const Color(0xFFC9B6F0) : const Color(0xFF5A2DF4);
-    final activeBg = dark
-        ? const Color(0x388B6CFF) // .22
-        : const Color(0x1F5A2DF4); // .12 — 액티브 알약 배경
     final inactive = dark
         ? Colors.white.withValues(alpha: 0.4)
         : const Color(0xFF14131A).withValues(alpha: 0.34);
@@ -86,7 +57,7 @@ class SurlapBottomNav extends ConsumerWidget {
               filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
               child: Container(
                 key: coachKeyBottomNav,
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                 decoration: BoxDecoration(
                   color: tint,
                   borderRadius: BorderRadius.circular(28),
@@ -103,11 +74,15 @@ class SurlapBottomNav extends ConsumerWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    for (final t in tabs)
+                    for (final tab in AppTab.values)
                       _NavItem(
-                        tab: t,
-                        accent: accent,
-                        activeBg: activeBg,
+                        icon: _icons[tab]!,
+                        label: tr(tab.label),
+                        active: tab == current,
+                        onTap: () => notifier.setTab(tab),
+                        coachKey: _coachKeys[tab],
+                        accent: sh.accentInk,
+                        activeBg: sh.accentBg,
                         inactive: inactive,
                       ),
                   ],
@@ -121,7 +96,7 @@ class SurlapBottomNav extends ConsumerWidget {
   }
 }
 
-// ─── nav 뒤 하단 scrim — 콘텐츠가 nav 뒤로 페이드 ──────────────────
+/// 내비 뒤 하단 스크림 — 콘텐츠가 내비 뒤로 자연스럽게 사라지도록.
 class BottomNavScrim extends ConsumerWidget {
   const BottomNavScrim({super.key});
 
@@ -152,69 +127,66 @@ class BottomNavScrim extends ConsumerWidget {
   }
 }
 
-class _Tab {
+/// 하단 내비가 가리는 높이 — 스크롤 뷰의 bottom padding 기준값.
+const double kBottomNavClearance = 108;
+
+class _NavItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool active;
   final VoidCallback onTap;
   final GlobalKey? coachKey;
+  final Color accent;
+  final Color activeBg;
+  final Color inactive;
 
-  const _Tab({
+  const _NavItem({
     required this.icon,
     required this.label,
     required this.active,
     required this.onTap,
-    this.coachKey,
-  });
-}
-
-class _NavItem extends StatelessWidget {
-  final _Tab tab;
-  final Color accent;
-  final Color activeBg;
-  final Color inactive;
-  const _NavItem({
-    required this.tab,
     required this.accent,
     required this.activeBg,
     required this.inactive,
+    this.coachKey,
   });
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: tab.label,
+      label: label,
       button: true,
+      selected: active,
       child: GestureDetector(
-        key: tab.coachKey,
-        onTap: tab.onTap,
+        key: coachKey,
+        onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          height: 40,
-          padding: EdgeInsets.symmetric(horizontal: tab.active ? 15 : 0),
-          constraints: BoxConstraints(minWidth: tab.active ? 0 : 44),
+          duration: Motion.fast,
+          curve: Motion.curve,
+          height: kMinTouch,
+          // 탭이 5개라 활성 상태에서도 가로 여백을 줄여 작은 기기에서 넘치지 않게.
+          padding: EdgeInsets.symmetric(horizontal: active ? 11 : 0),
+          constraints: BoxConstraints(minWidth: active ? 0 : kMinTouch),
           decoration: BoxDecoration(
-            color: tab.active ? activeBg : Colors.transparent,
+            color: active ? activeBg : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(tab.icon, size: tab.active ? 23 : 24,
-                  color: tab.active ? accent : inactive),
-              if (tab.active) ...[
-                const SizedBox(width: 6),
+              Icon(icon,
+                  size: active ? 21 : 23, color: active ? accent : inactive),
+              if (active) ...[
+                const SizedBox(width: 5),
                 Text(
-                  tab.label,
-                  style: TextStyle(
+                  label,
+                  style: const TextStyle(
                     fontFamily: 'Pretendard',
-                    fontSize: 13,
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.2,
-                    color: accent,
-                  ),
+                  ).copyWith(color: accent),
                 ),
               ],
             ],

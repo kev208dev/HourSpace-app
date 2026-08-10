@@ -41,7 +41,7 @@ class _SearchSheetState extends ConsumerState<_SearchSheet> {
 
   void _openHit(SearchHit hit) {
     if (hit.dateKey.isNotEmpty) {
-      ref.read(viewProvider.notifier).setDayView(hit.dateKey);
+      ref.read(viewProvider.notifier).openDay(hit.dateKey);
     }
     Navigator.pop(context);
   }

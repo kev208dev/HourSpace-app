@@ -17,8 +17,6 @@ import '../timetable_view/timetable_view.dart'
 import '../../i18n/dates.dart' as i18nd;
 import '../../i18n/strings.dart';
 import '../../providers/holidays_provider.dart';
-import '../../widgets/view_segment_control.dart';
-import '../../widgets/calendar_filter_strip.dart';
 import '../../widgets/header_collapse.dart';
 import '../../providers/todos_provider.dart';
 import '../../providers/academic_schedule_provider.dart';
@@ -68,7 +66,7 @@ class _DayViewState extends ConsumerState<DayView> {
     final delta = v < 0 ? 1 : -1;
     ref
         .read(viewProvider.notifier)
-        .setDayView(_shiftDay(widget.dateKey, delta));
+        .openDay(_shiftDay(widget.dateKey, delta));
   }
 
   @override
@@ -233,15 +231,6 @@ class _DayViewState extends ConsumerState<DayView> {
           ),
         ),
         // ── 2행: 글래스 세그먼트 (연/월/주/일) ──
-        const Padding(
-          padding: EdgeInsets.fromLTRB(Gap.lg, Gap.xs, Gap.lg, Gap.sm),
-          child: ViewSegmentControl(),
-        ),
-        // ── 3행: 필터칩(접힘) ──
-        CollapsibleHeader(
-          collapsed: ref.watch(headerCollapsedProvider),
-          child: const CalendarFilterStrip(),
-        ),
         // 종일 일정
         if (allDay.isNotEmpty) _AllDayBar(items: allDay, themes: themes, sh: sh),
         // 할 일

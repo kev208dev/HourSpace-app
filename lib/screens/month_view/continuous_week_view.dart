@@ -333,7 +333,7 @@ class _WeekRow extends ConsumerWidget {
           recordBadges: badges,
           topReserve: reserve,
           // 탭: 그 주(주간 뷰)로 이동. 꾹누름: 위젯/일정 추가 메뉴.
-          onTap: () => ref.read(viewProvider.notifier).setWeekView(key),
+          onTap: () => ref.read(viewProvider.notifier).openThreeDay(key),
           onLongPress: () => _handleDayTap(context, ref, date),
           onDoubleTap: () =>
               ref.read(circlesProvider.notifier).toggle(key),

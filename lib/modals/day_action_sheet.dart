@@ -149,7 +149,7 @@ class DayActionSheet extends ConsumerWidget {
               color: sh.ink,
               onTap: () {
                 Navigator.pop(context);
-                ref.read(viewProvider.notifier).setDayView(dateKey);
+                ref.read(viewProvider.notifier).openDay(dateKey);
               },
             ),
 

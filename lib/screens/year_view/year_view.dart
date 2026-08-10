@@ -55,7 +55,8 @@ class YearView extends ConsumerWidget {
     // rect/overlay를 전환 전에 확보(전환 시작하면 year 뷰가 사라짐).
     if (box is! RenderBox || !box.hasSize) {
       notifier.setYearMonth(year, month);
-      notifier.setMode(ViewMode.events);
+      notifier.setCalendarMode(CalendarViewMode.month);
+      Navigator.of(cardCtx).maybePop();
       return;
     }
     final rect = box.localToGlobal(Offset.zero) & box.size;
@@ -63,7 +64,7 @@ class YearView extends ConsumerWidget {
 
     // 월간 뷰를 먼저 띄워 오버레이 뒤에서 빌드되게 한다.
     notifier.setYearMonth(year, month);
-    notifier.setMode(ViewMode.events);
+    notifier.setCalendarMode(CalendarViewMode.month);
 
     late OverlayEntry entry;
     entry = OverlayEntry(

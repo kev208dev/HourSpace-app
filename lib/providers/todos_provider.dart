@@ -39,11 +39,25 @@ class TodosNotifier extends Notifier<List<TodoItem>> {
     await _save();
   }
 
-  // 한 번 누를 때마다 없음 → 진행중 → 완료 → 없음 순으로 순환.
+  /// 완료 ↔ 미완료 토글.
+  ///
+  /// 예전에는 없음 → 진행중 → 완료 → 없음 3단 순환이라, 완료를 취소하려고
+  /// 누르면 "진행중"을 거쳤다. 체크박스 관용구에 어긋나 헷갈린다.
+  /// "진행중"(status 1)은 상세 화면에서 [setStatus] 로만 다룬다.
   Future<void> toggleDone(String id) async {
     state = [
       for (final t in state)
-        if (t.id == id) t.copyWith(status: (t.status + 1) % 3) else t
+        if (t.id == id) t.copyWith(status: t.done ? 0 : 2) else t
+    ];
+    await _save();
+  }
+
+  /// 상태 직접 지정 — 0=없음, 1=진행중, 2=완료.
+  Future<void> setStatus(String id, int status) async {
+    final next = status.clamp(0, 2);
+    state = [
+      for (final t in state)
+        if (t.id == id) t.copyWith(status: next) else t
     ];
     await _save();
   }

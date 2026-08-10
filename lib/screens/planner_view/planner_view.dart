@@ -19,9 +19,7 @@ import '../../supabase/neis_service.dart'
     show NeisSchool, academicVisibleForGrade;
 import '../timetable_view/timetable_view.dart'
     show timetableSubjectsForDate, getDisplaySubjectName;
-import '../../widgets/view_segment_control.dart';
 import '../../widgets/arrow_pinch.dart';
-import '../../widgets/calendar_filter_strip.dart';
 import '../../widgets/header_collapse.dart';
 import '../month_view/multiday_span.dart' show eventColorFor;
 import '../../providers/academic_schedule_provider.dart';
@@ -74,14 +72,14 @@ class _PlannerViewState extends ConsumerState<PlannerView> {
 
   DateTime _dateFor(int i) => _anchor.add(Duration(days: i - _kCenter));
 
-  // 진입 대상 날짜 — 월간에서 탭한 날(viewDay) 있으면 그 날, 없으면 오늘.
+  // 진입 대상 날짜 — 캘린더에서 선택한 날짜(항상 값이 있다).
   DateTime get _targetDate {
-    final key = ref.read(viewProvider).viewDay;
-    if (key != null && key.isNotEmpty) {
-      final d = du.fromDateKey(key);
+    try {
+      final d = du.fromDateKey(ref.read(viewProvider).selectedDay);
       return DateTime(d.year, d.month, d.day);
+    } catch (_) {
+      return _today;
     }
-    return _today;
   }
 
   // 대상 날짜가 가운데(3일 중)로 오게 하는 좌측(leftmost) 인덱스.
@@ -281,10 +279,6 @@ class _PlannerViewState extends ConsumerState<PlannerView> {
             onToday: _goToday,
             onSearch: () => showSearchSheet(context),
           ),
-          CollapsibleHeader(
-            collapsed: ref.watch(headerCollapsedProvider),
-            child: const CalendarFilterStrip(),
-          ),
           Expanded(
             child: _hCtrl == null
                 ? const SizedBox.shrink()
@@ -404,7 +398,7 @@ class _PlannerViewState extends ConsumerState<PlannerView> {
     final isSat = d.weekday == DateTime.saturday;
     final allDay = _allDayFor(d);
     return GestureDetector(
-      onTap: () => ref.read(viewProvider.notifier).setDayView(du.toDateKey(d)),
+      onTap: () => ref.read(viewProvider.notifier).openDay(du.toDateKey(d)),
       behavior: HitTestBehavior.opaque,
       child: Container(
         decoration: BoxDecoration(
@@ -531,7 +525,7 @@ class _PlannerViewState extends ConsumerState<PlannerView> {
               behavior: HitTestBehavior.opaque,
               onTap: () => ref
                   .read(viewProvider.notifier)
-                  .setDayView(du.toDateKey(d)),
+                  .openDay(du.toDateKey(d)),
             ),
           ),
           // 그리드 가로선
@@ -930,11 +924,6 @@ class _PlannerNav extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-          // ── 2행: 글래스 세그먼트 (연/월/주/일) ──
-          const Padding(
-            padding: EdgeInsets.fromLTRB(Gap.lg, Gap.xs, Gap.lg, Gap.sm),
-            child: ViewSegmentControl(),
           ),
         ],
       ),

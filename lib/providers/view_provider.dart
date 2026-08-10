@@ -1,56 +1,82 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-enum ViewMode { home, events, year, planner, day, timetable, settings, themes, profile }
+import '../core/utils/date_utils.dart' as du;
 
-// 슬라이드 순서: home/timetable/settings/themes/profile은 방향 없음(-1)
-// 연간↔월간↔주간↔일간 전환은 슬라이드 없이(0) 즉시 전환.
-const _viewOrder = {
-  ViewMode.home: -1,
-  ViewMode.year: -1,
-  ViewMode.events: -1,
-  ViewMode.planner: -1,
-  ViewMode.day: -1,
-  ViewMode.timetable: -1,
-  ViewMode.settings: -1,
-  ViewMode.themes: -1,
-  ViewMode.profile: -1,
-};
+/// 하단 내비게이션의 5개 탭.
+///
+/// 각 탭은 질문 하나에 답한다:
+///   오늘   — 지금 뭘 해야 하지?
+///   캘린더 — 언제 뭐가 있지?
+///   학교   — 오늘 학교에서 뭐 하지?
+///   할 일  — 내가 아직 뭘 안 했지?
+///   더보기 — 나머지 전부
+enum AppTab { today, calendar, school, todo, more }
 
-int viewIndex(ViewMode m) => _viewOrder[m] ?? -1;
+/// 캘린더 탭 안의 보기 방식. 별도 화면이 아니라 같은 화면의 모드다.
+enum CalendarViewMode { month, threeDay, day }
+
+extension AppTabX on AppTab {
+  String get label => switch (this) {
+        AppTab.today => '오늘',
+        AppTab.calendar => '캘린더',
+        AppTab.school => '학교',
+        AppTab.todo => '할 일',
+        AppTab.more => '더보기',
+      };
+}
+
+extension CalendarViewModeX on CalendarViewMode {
+  String get label => switch (this) {
+        CalendarViewMode.month => '월',
+        CalendarViewMode.threeDay => '3일',
+        CalendarViewMode.day => '하루',
+      };
+}
 
 class ViewState {
-  final ViewMode mode;
+  final AppTab tab;
+  final CalendarViewMode calendarMode;
+
+  /// 월간 그리드가 보고 있는 연·월.
   final int viewYear;
   final int viewMonth;
-  final String? viewDay; // 'YYYY-MM-DD'
-  final ViewMode? prevMode; // 슬라이드 방향 계산용
+
+  /// 선택된 날짜 'YYYY-MM-DD'. 항상 값이 있다 — 아젠다·3일·하루 뷰의 기준.
+  final String selectedDay;
+
+  /// 탭 전환 애니메이션 방향 계산용.
+  final AppTab? prevTab;
 
   const ViewState({
-    this.mode = ViewMode.home,
+    this.tab = AppTab.today,
+    this.calendarMode = CalendarViewMode.month,
     required this.viewYear,
     required this.viewMonth,
-    this.viewDay,
-    this.prevMode,
+    required this.selectedDay,
+    this.prevTab,
   });
 
   ViewState copyWith({
-    ViewMode? mode, int? viewYear, int? viewMonth,
-    String? viewDay, ViewMode? prevMode,
-  }) => ViewState(
-    mode: mode ?? this.mode,
-    viewYear: viewYear ?? this.viewYear,
-    viewMonth: viewMonth ?? this.viewMonth,
-    viewDay: viewDay ?? this.viewDay,
-    prevMode: prevMode ?? this.prevMode,
-  );
+    AppTab? tab,
+    CalendarViewMode? calendarMode,
+    int? viewYear,
+    int? viewMonth,
+    String? selectedDay,
+    AppTab? prevTab,
+  }) =>
+      ViewState(
+        tab: tab ?? this.tab,
+        calendarMode: calendarMode ?? this.calendarMode,
+        viewYear: viewYear ?? this.viewYear,
+        viewMonth: viewMonth ?? this.viewMonth,
+        selectedDay: selectedDay ?? this.selectedDay,
+        prevTab: prevTab ?? this.prevTab,
+      );
 
-  /// 슬라이드 방향: 1=왼쪽(앞으로), -1=오른쪽(뒤로), 0=없음
+  /// 슬라이드 방향: 1=왼쪽(뒤 탭으로), -1=오른쪽(앞 탭으로), 0=없음.
   int get slideDirection {
-    if (prevMode == null) return 0;
-    final from = viewIndex(prevMode!);
-    final to = viewIndex(mode);
-    if (from < 0 || to < 0 || from == to) return 0;
-    return to > from ? 1 : -1;
+    if (prevTab == null || prevTab == tab) return 0;
+    return tab.index > prevTab!.index ? 1 : -1;
   }
 }
 
@@ -58,40 +84,102 @@ class ViewNotifier extends Notifier<ViewState> {
   @override
   ViewState build() {
     final now = DateTime.now();
-    return ViewState(viewYear: now.year, viewMonth: now.month, mode: ViewMode.events);
+    return ViewState(
+      viewYear: now.year,
+      viewMonth: now.month,
+      selectedDay: du.toDateKey(now),
+    );
   }
 
-  void setMode(ViewMode mode) {
-    state = state.copyWith(mode: mode, prevMode: state.mode);
+  void setTab(AppTab tab) {
+    if (state.tab == tab) return;
+    state = state.copyWith(tab: tab, prevTab: state.tab);
   }
 
-  void setDayView(String dateKey) {
-    state = state.copyWith(mode: ViewMode.day, viewDay: dateKey, prevMode: state.mode);
-  }
+  void setCalendarMode(CalendarViewMode mode) =>
+      state = state.copyWith(calendarMode: mode);
 
-  /// 주간 뷰로 이동하며 기준 날짜(주 anchor)를 전달.
-  void setWeekView(String dateKey) {
+  /// 날짜 선택 — 탭·보기 방식은 그대로 두고 기준 날짜만 바꾼다.
+  /// 월간 뷰에서 다른 달의 날짜를 고르면 보고 있는 달도 따라간다.
+  void selectDay(String dateKey) {
+    final d = du.fromDateKey(dateKey);
     state = state.copyWith(
-        mode: ViewMode.planner, viewDay: dateKey, prevMode: state.mode);
+      selectedDay: dateKey,
+      viewYear: d.year,
+      viewMonth: d.month,
+    );
+  }
+
+  /// 특정 날짜를 하루 보기로 연다(검색 결과 탭 등).
+  void openDay(String dateKey) {
+    final d = du.fromDateKey(dateKey);
+    state = state.copyWith(
+      tab: AppTab.calendar,
+      calendarMode: CalendarViewMode.day,
+      selectedDay: dateKey,
+      viewYear: d.year,
+      viewMonth: d.month,
+      prevTab: state.tab,
+    );
+  }
+
+  /// 특정 날짜를 3일 보기로 연다(월간 그리드에서 주 단위로 파고들 때).
+  void openThreeDay(String dateKey) {
+    final d = du.fromDateKey(dateKey);
+    state = state.copyWith(
+      tab: AppTab.calendar,
+      calendarMode: CalendarViewMode.threeDay,
+      selectedDay: dateKey,
+      viewYear: d.year,
+      viewMonth: d.month,
+      prevTab: state.tab,
+    );
   }
 
   void goToToday() {
     final now = DateTime.now();
-    state = state.copyWith(viewYear: now.year, viewMonth: now.month);
+    state = state.copyWith(
+      viewYear: now.year,
+      viewMonth: now.month,
+      selectedDay: du.toDateKey(now),
+    );
   }
 
   void prevMonth() {
-    int m = state.viewMonth - 1;
-    int y = state.viewYear;
-    if (m < 1) { m = 12; y--; }
+    var m = state.viewMonth - 1;
+    var y = state.viewYear;
+    if (m < 1) {
+      m = 12;
+      y--;
+    }
     state = state.copyWith(viewYear: y, viewMonth: m);
   }
 
   void nextMonth() {
-    int m = state.viewMonth + 1;
-    int y = state.viewYear;
-    if (m > 12) { m = 1; y++; }
+    var m = state.viewMonth + 1;
+    var y = state.viewYear;
+    if (m > 12) {
+      m = 1;
+      y++;
+    }
     state = state.copyWith(viewYear: y, viewMonth: m);
+  }
+
+  /// 현재 보기 방식 기준으로 한 칸 앞/뒤(월간=한 달, 3일=3일, 하루=하루).
+  void step(int direction) {
+    switch (state.calendarMode) {
+      case CalendarViewMode.month:
+        direction > 0 ? nextMonth() : prevMonth();
+      case CalendarViewMode.threeDay:
+        _shiftSelected(3 * direction);
+      case CalendarViewMode.day:
+        _shiftSelected(direction);
+    }
+  }
+
+  void _shiftSelected(int days) {
+    final d = du.fromDateKey(state.selectedDay).add(Duration(days: days));
+    selectDay(du.toDateKey(d));
   }
 
   void prevYear() => state = state.copyWith(viewYear: state.viewYear - 1);
