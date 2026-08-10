@@ -117,60 +117,9 @@ class AuthNotifier extends Notifier<User?> {
     }
   }
 
-  // 웹 OAuth 복귀 URL — 쿼리·프래그먼트(해시 라우트) 제거, 경로(서브패스)는 보존.
-  // 예: https://kev208dev.github.io/Surlap/#/x → https://kev208dev.github.io/Surlap/
-  String _webRedirectUrl() {
-    final b = Uri.base;
-    return Uri(
-      scheme: b.scheme,
-      host: b.host,
-      port: b.hasPort ? b.port : null,
-      path: b.path,
-    ).toString();
-  }
-
-  Future<void> signInGoogle() async {
-    final client = sb;
-    if (client == null) { throw Exception('Supabase 클라이언트가 없습니다'); }
-    try {
-      await client.auth.signInWithOAuth(
-        OAuthProvider.google,
-        // 웹: 현재 앱 경로로 복귀 / 모바일: 등록된 딥링크 콜백으로 복귀.
-        // 웹은 origin 만 쓰면 GitHub Pages 서브패스(/Surlap/)가 빠져
-        // 앱이 아닌 루트로 복귀 → 세션을 못 받아 무한 로그인. 경로 보존 필요.
-        // (Android의 Uri.base는 file:/// 이라 .origin이 StateError → 커스텀 스킴 사용)
-        redirectTo: kIsWeb ? _webRedirectUrl() : 'surlap://login-callback',
-        // iOS: 기본(내장 SFSafariViewController)에선 Google이 임베디드 웹뷰로
-        // 보고 흰 화면으로 막는다. 외부 Safari로 띄워야 로그인 후 커스텀 스킴
-        // 콜백으로 정상 복귀. (Android는 supabase_flutter가 이미 external 강제)
-        authScreenLaunchMode: LaunchMode.externalApplication,
-      );
-      // OAuth는 리다이렉트 방식 — 콜백 딥링크를 supabase_flutter가 받아
-      // 세션을 복원하고 onAuthStateChange에서 상태 갱신됨
-    } catch (e, st) {
-      debugPrint('[Auth] signInGoogle 실패: ${e.runtimeType} → $e');
-      debugPrint('$st');
-      rethrow;
-    }
-  }
-
-  /// Sign in with Apple — Apple App Store 4.8 요구사항 (Google 등 제3자 로그인 제공 시).
-  /// iOS/macOS만 노출. Supabase 대시보드에 Apple provider 설정 + Service ID 필요.
-  Future<void> signInApple() async {
-    final client = sb;
-    if (client == null) { throw Exception('Supabase 클라이언트가 없습니다'); }
-    try {
-      await client.auth.signInWithOAuth(
-        OAuthProvider.apple,
-        redirectTo: kIsWeb ? _webRedirectUrl() : 'surlap://login-callback',
-        authScreenLaunchMode: LaunchMode.externalApplication,
-      );
-    } catch (e, st) {
-      debugPrint('[Auth] signInApple 실패: ${e.runtimeType} → $e');
-      debugPrint('$st');
-      rethrow;
-    }
-  }
+  // 소셜 로그인(Google · 카카오 · Apple)은 화면에 버튼만 먼저 올려 두고
+  // 실제 연동은 아직 붙이지 않았다. 붙일 때 이 자리에 provider 별 진입점을
+  // 추가하고 login_screen 의 _notReady 를 대체한다.
 
   Future<void> signOut() async {
     await _clearCredentials(); // 자동 로그인 비활성화

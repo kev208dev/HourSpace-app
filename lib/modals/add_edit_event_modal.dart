@@ -180,46 +180,51 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
             ),
             const SizedBox(height: 14),
 
-            // 일정 내용
-            _FieldRow(
-              label: tr('무엇을 계획하고 있나요?'),
-              sh: sh,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: _textCtrl,
-                    autofocus: true,
-                    style: AppType.body.copyWith(color: sh.ink),
-                    decoration: InputDecoration(
-                      hintText: tr('예: 내일 7시 수학학원'),
-                      hintStyle: TextStyle(color: sh.inkFaint),
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                    textCapitalization: TextCapitalization.sentences,
-                    onChanged: _onTitleChanged,
-                    onSubmitted: (_) => _save(),
-                  ),
-                  if (!isEdit && _suggestion != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: _UnderstoodSummary(
-                        dateKey: _dateKey,
-                        start: _startTime,
-                        end: _endTime,
-                        sh: sh,
-                      ),
-                    ),
-                ],
+            // 제목 — 목업의 큰 입력 필드(22px/700 + 2px 밑줄).
+            TextField(
+              controller: _textCtrl,
+              autofocus: true,
+              style: AppType.display.copyWith(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.44,
+                  color: sh.ink),
+              decoration: InputDecoration(
+                hintText: tr('제목 (필수)'),
+                hintStyle: TextStyle(
+                    color: sh.ink.withValues(alpha: Alpha.placeholder)),
+                border: UnderlineInputBorder(
+                    borderSide: BorderSide(color: sh.border, width: 2)),
+                enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: sh.border, width: 2)),
+                focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: sh.accent, width: 2)),
+                isDense: true,
+                contentPadding: const EdgeInsets.only(top: 6, bottom: 10),
               ),
+              textCapitalization: TextCapitalization.sentences,
+              onChanged: _onTitleChanged,
+              onSubmitted: (_) => _save(),
             ),
+            if (!isEdit && _suggestion != null)
+              Padding(
+                padding: const EdgeInsets.only(top: Gap.md),
+                child: _UnderstoodSummary(
+                  dateKey: _dateKey,
+                  start: _startTime,
+                  end: _endTime,
+                  sh: sh,
+                ),
+              ),
+            const SizedBox(height: Gap.lg),
+
             const SizedBox(height: 12),
 
+            _SettingsCard(rows: [
             // 날짜
             _FieldRow(
               label: tr('날짜'),
+              icon: Icons.calendar_today_rounded,
               sh: sh,
               child: GestureDetector(
                 onTap: _pickDate,
@@ -230,11 +235,10 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-
             // 시간
             _FieldRow(
-              label: tr('시간 (선택)'),
+              label: tr('시간'),
+              icon: Icons.schedule_rounded,
               sh: sh,
               child: Row(
                 children: [
@@ -268,12 +272,12 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
                 ],
               ),
             ),
-            const SizedBox(height: 14),
-
             // 반복 — 없음/매주/매월/매년 + 종료일(선택)
             _FieldRow(
               label: tr('반복'),
+              icon: Icons.repeat_rounded,
               sh: sh,
+              last: true,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -347,12 +351,14 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
                 ],
               ),
             ),
-            const SizedBox(height: 14),
+            ]),
+            const SizedBox(height: Gap.lg),
 
             // 캘린더(카테고리) 선택
             if (themes.isNotEmpty) ...[
               Text(tr('캘린더 (여러 개 선택 가능)'),
-                  style: AppType.label.copyWith(color: sh.inkSoft)),
+                  style: AppType.label
+                      .copyWith(color: sh.ink.withValues(alpha: 0.50))),
               const SizedBox(height: Gap.sm),
               Wrap(
                 spacing: 8,
@@ -634,30 +640,70 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
   }
 }
 
+/// 설정 행 — 목업 D1 의 카드 안 리스트 한 줄.
+///
+/// 왼쪽 accent 아이콘 · 라벨(13px, 60%) · 오른쪽 값(14.5px/600).
+/// 카드 자체는 [_SettingsCard] 가 감싸고, 행 사이는 divider 로 나뉜다.
 class _FieldRow extends StatelessWidget {
   final String label;
   final Widget child;
   final SurlapColors sh;
-  const _FieldRow({required this.label, required this.child, required this.sh});
+
+  /// 왼쪽 아이콘. 없으면 자리만 비운다.
+  final IconData? icon;
+
+  /// 카드 안 마지막 행이면 아래 divider 를 그리지 않는다.
+  final bool last;
+
+  const _FieldRow({
+    required this.label,
+    required this.child,
+    required this.sh,
+    this.icon,
+    this.last = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: AppType.label.copyWith(color: sh.inkSoft)),
-        const SizedBox(height: Gap.xs),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: Gap.md, vertical: Gap.md),
-          decoration: BoxDecoration(
-            color: sh.card2,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: sh.ink.withValues(alpha: 0.06)),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: Gap.md, vertical: 14),
+      decoration: BoxDecoration(
+        border: last ? null : Border(bottom: BorderSide(color: sh.border)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(icon ?? Icons.circle_outlined, size: 19, color: sh.accent),
+          const SizedBox(width: 12),
+          Text(label,
+              style: AppType.body
+                  .copyWith(color: sh.ink.withValues(alpha: 0.60))),
+          const SizedBox(width: Gap.md),
+          Expanded(
+            child: Align(alignment: Alignment.centerRight, child: child),
           ),
-          child: child,
-        ),
-      ],
+        ],
+      ),
+    );
+  }
+}
+
+/// 설정 행들을 담는 흰 카드.
+class _SettingsCard extends StatelessWidget {
+  final List<Widget> rows;
+  const _SettingsCard({required this.rows});
+
+  @override
+  Widget build(BuildContext context) {
+    final sh = context.sh;
+    return Container(
+      decoration: BoxDecoration(
+        color: sh.card,
+        borderRadius: BorderRadius.circular(Radii.card),
+        boxShadow: sh.shadowCard,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(children: rows),
     );
   }
 }

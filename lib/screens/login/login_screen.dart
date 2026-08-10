@@ -1,231 +1,524 @@
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../supabase/auth_service.dart';
-import '../../i18n/strings.dart';
-import '../../modals/login_modal.dart';
-import '../../widgets/app_toast.dart';
+
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/design_tokens.dart';
+import '../../i18n/strings.dart';
+import '../../supabase/auth_service.dart';
+import '../../supabase/supabase_client.dart';
+import '../../widgets/app_toast.dart';
 
-/// 전체화면 로그인 — 스플래시/온보딩과 같은 보라→블루 그라데이션 톤.
-/// 기존 인증 로직(signInGoogle / 아이디 폼)을 그대로 재사용한다.
-/// [onDone]: 로그인 성공 또는 "나중에 하기" 시 호출.
-Future<void> showLoginScreen(BuildContext context) {
-  return Navigator.of(context).push(MaterialPageRoute(
-    fullscreenDialog: true,
-    builder: (routeCtx) => LoginScreen(
-      showSkip: true,
-      onDone: () => Navigator.of(routeCtx).maybePop(),
-    ),
-  ));
-}
+/// 로그인 · 계정 만들기 · 게스트 (핸드오프 A5 · spec §2).
+///
+/// 계정 없이도 로컬 기능은 전부 쓸 수 있다. 계정은 클라우드 동기화와 공유
+/// 캘린더에만 필요하다.
+///
+/// **이메일이 아니라 아이디로 로그인한다.** 입력한 아이디는 내부에서만
+/// `<id>@cal-id.local` 로 바뀌어 Supabase 에 전달되고, 화면에서는 끝까지
+/// 아이디로만 다룬다.
+Future<void> showLoginScreen(BuildContext context) =>
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
 
 class LoginScreen extends ConsumerStatefulWidget {
-  final VoidCallback onDone;
+  /// 첫 실행 흐름에서 "건너뛰기"를 노출할지.
   final bool showSkip;
-  const LoginScreen({super.key, required this.onDone, this.showSkip = true});
+  final VoidCallback? onDone;
+
+  const LoginScreen({super.key, this.showSkip = false, this.onDone});
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
-  bool _loading = false;
+enum _AuthTab { signIn, signUp }
 
-  Future<void> _google() async {
-    setState(() => _loading = true);
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _idCtrl = TextEditingController();
+  final _pwCtrl = TextEditingController();
+  _AuthTab _tab = _AuthTab.signIn;
+  bool _obscure = true;
+  bool _busy = false;
+  String? _idError;
+
+  @override
+  void dispose() {
+    _idCtrl.dispose();
+    _pwCtrl.dispose();
+    super.dispose();
+  }
+
+  bool get _idValid => isValidId(_idCtrl.text.trim());
+  bool get _canSubmit =>
+      !_busy && _idValid && _pwCtrl.text.length >= 6 && sb != null;
+
+  Future<void> _submit() async {
+    if (!_canSubmit) return;
+    setState(() => _busy = true);
+    final id = _idCtrl.text.trim();
+    final pw = _pwCtrl.text;
     try {
-      await ref.read(authProvider.notifier).signInGoogle();
-      // OAuth 리다이렉트 — 성공 시 authProvider 변화 → ref.listen이 onDone 호출.
-    } catch (_) {
-      if (mounted) {
-        setState(() => _loading = false);
-        AppToast.error(context, tr('로그인에 실패했어요. 잠시 후 다시 시도해주세요'));
+      final auth = ref.read(authProvider.notifier);
+      if (_tab == _AuthTab.signIn) {
+        await auth.signInWithId(id, pw);
+      } else {
+        await auth.signUpWithId(id, pw);
       }
+      if (!mounted) return;
+      _finish();
+    } catch (e) {
+      if (!mounted) return;
+      AppToast.error(context, _message(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
+  String _message(Object e) {
+    final s = e.toString().toLowerCase();
+    if (s.contains('invalid login')) return tr('아이디 또는 비밀번호가 맞지 않습니다.');
+    if (s.contains('already registered') || s.contains('already exists')) {
+      return tr('이미 쓰고 있는 아이디입니다.');
+    }
+    return tr('처리하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+  }
+
+  void _finish() {
+    if (widget.onDone != null) {
+      widget.onDone!();
+    } else if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+  }
+
+  /// 아직 붙이지 않은 소셜 로그인 — 자리만 잡아 둔다.
+  void _notReady(String provider) =>
+      AppToast.show(context, trf('{0} 로그인은 준비 중입니다.', [provider]));
+
   @override
   Widget build(BuildContext context) {
-    // 로그인 성공(세션 확보) 시 완료 콜백.
-    ref.listen(authProvider, (prev, next) {
-      if (next != null && mounted) widget.onDone();
-    });
+    final sh = context.sh;
+    final noSupabase = sb == null;
+    // Apple 로그인은 iOS·macOS 에서만 노출한다(App Store 요구사항 대응).
+    final appleAvailable = !kIsWeb && (Platform.isIOS || Platform.isMacOS);
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
+    return Scaffold(
+      backgroundColor: sh.bg,
+      appBar: AppBar(
+        backgroundColor: sh.bg,
+        elevation: 0,
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: Icon(Icons.close_rounded, color: sh.ink),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
+        actions: [
+          if (widget.showSkip)
+            TextButton(
+              onPressed: _finish,
+              child: Text(tr('건너뛰기'),
+                  style: AppType.button.copyWith(color: sh.inkSoft)),
+            ),
+        ],
       ),
-      child: Scaffold(
-        backgroundColor: const Color(0xFF5A2DF4),
-        body: DecoratedBox(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF5A2DF4), Color(0xFF7C4DFF)],
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(Gap.lg, Gap.sm, Gap.lg, Gap.lg),
+        children: [
+          Text(tr('시작하기'),
+              style: AppType.display.copyWith(
+                  fontSize: 30, fontWeight: FontWeight.w700, color: sh.ink)),
+          const SizedBox(height: Gap.sm),
+          Text(
+            tr('계정 없이도 모든 로컬 기능을 쓸 수 있습니다. 계정은 클라우드 동기화와 공유 캘린더에만 필요합니다.'),
+            style: AppType.body.copyWith(
+                fontSize: 14, height: 1.6,
+                color: sh.ink.withValues(alpha: 0.62)),
+          ),
+          if (noSupabase) ...[
+            const SizedBox(height: Gap.lg),
+            _WarnBanner(
+              text: tr('서버 설정이 없어 로그인·회원가입·공유 캘린더를 사용할 수 없습니다. '
+                  '게스트로 계속하면 앱의 나머지 기능은 그대로 동작합니다.'),
+            ),
+          ],
+          const SizedBox(height: Gap.lg),
+          _Tabs(
+            current: _tab,
+            onPick: (t) => setState(() {
+              _tab = t;
+              _idError = null;
+            }),
+          ),
+          const SizedBox(height: Gap.lg),
+          _FieldLabel(tr('아이디')),
+          _IdField(
+            controller: _idCtrl,
+            enabled: !noSupabase,
+            error: _idError,
+            onChanged: (_) => setState(() {
+              _idError = _idCtrl.text.isEmpty || _idValid
+                  ? null
+                  : tr('영문·숫자·밑줄 4–20자로 지어 주세요.');
+            }),
+          ),
+          const SizedBox(height: Gap.md),
+          _FieldLabel(tr('비밀번호')),
+          _PasswordField(
+            controller: _pwCtrl,
+            obscure: _obscure,
+            enabled: !noSupabase,
+            onToggle: () => setState(() => _obscure = !_obscure),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: Gap.lg),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _canSubmit ? _submit : null,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
+                shape: const StadiumBorder(),
+              ),
+              child: _busy
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: sh.onAccent),
+                    )
+                  : Text(
+                      _tab == _AuthTab.signIn ? tr('로그인') : tr('계정 만들기'),
+                      style: AppType.button.copyWith(fontSize: 16),
+                    ),
             ),
           ),
-          child: Stack(children: [
-            Positioned(
-              top: -110,
-              right: -80,
-              child: _glow(300, Colors.white.withValues(alpha: 0.10)),
+          const SizedBox(height: Gap.lg),
+          const _OrDivider(),
+          const SizedBox(height: Gap.md),
+          // 소셜 로그인 — 버튼만 먼저 둔다. 실제 연동은 아직 붙이지 않았다.
+          _SocialButton(
+            icon: Icons.g_mobiledata_rounded,
+            label: tr('Google로 계속'),
+            onTap: () => _notReady('Google'),
+          ),
+          const SizedBox(height: Gap.sm),
+          _SocialButton(
+            icon: Icons.chat_bubble_rounded,
+            label: tr('카카오로 계속'),
+            onTap: () => _notReady(tr('카카오')),
+          ),
+          if (appleAvailable) ...[
+            const SizedBox(height: Gap.sm),
+            _SocialButton(
+              icon: Icons.apple_rounded,
+              label: tr('Apple로 계속'),
+              onTap: () => _notReady('Apple'),
             ),
-            Positioned(
-              bottom: -150,
-              left: -110,
-              child:
-                  _glow(360, const Color(0xFF9B6BFF).withValues(alpha: 0.30)),
-            ),
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(28, 12, 28, 20),
-                child: Column(
-                  children: [
-                    const Spacer(flex: 2),
-                    // ── 마스코트 + 워드마크 + 헤드라인 ──
-                    Icon(Icons.calendar_month_rounded, size: 56),
-                    const SizedBox(height: 22),
-                    Text('Surlap',
-                        style: GoogleFonts.spaceGrotesk(
-                            fontSize: 30,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.025 * 30,
-                            color: Colors.white,
-                            height: 1.0)),
-                    const SizedBox(height: 12),
-                    Text(
-                      tr('오늘의 시간을 정리해볼까요?'),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                          fontSize: 19,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          height: 1.25),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      tr('로그인하면 일정·시간표·캘린더가\n모든 기기에서 안전하게 동기화돼요'),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          height: 1.45,
-                          color: Colors.white.withValues(alpha: 0.72)),
-                    ),
-                    const Spacer(flex: 3),
-                    // ── 흰색 pill 메인 버튼 (Google) ──
-                    _WhitePill(
-                      label: tr('Google로 계속하기'),
-                      loading: _loading,
-                      onTap: _loading ? null : _google,
-                    ),
-                    const SizedBox(height: 12),
-                    // ── 아이디로 로그인 (보조) ──
-                    SizedBox(
-                      height: 48,
-                      child: TextButton(
-                        onPressed: _loading
-                            ? null
-                            : () => showLoginModal(context,
-                                startWithForm: true),
-                        style: TextButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 48),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16)),
-                        ),
-                        child: Text(tr('아이디로 로그인'),
-                            style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white.withValues(alpha: 0.92))),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    // ── 나중에 하기 (약한 액션) ──
-                    if (widget.showSkip)
-                      TextButton(
-                        onPressed: widget.onDone,
-                        child: Text(tr('나중에 하기'),
-                            style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white.withValues(alpha: 0.55))),
-                      ),
-                  ],
-                ),
+          ] else ...[
+            const SizedBox(height: Gap.sm),
+            Text(tr('Apple 로그인은 iOS·macOS에서만 표시됩니다.'),
+                style: AppType.sub.copyWith(
+                    height: 1.5, color: sh.ink.withValues(alpha: 0.45))),
+          ],
+          const SizedBox(height: Gap.md),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: _finish,
+              style: TextButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                foregroundColor: sh.accent,
               ),
+              child: Text(tr('게스트로 계속'),
+                  style: AppType.button.copyWith(fontSize: 14.5)),
             ),
-          ]),
+          ),
+          const SizedBox(height: Gap.md),
+          Text(
+            tr('게스트로 만든 데이터는 기기에만 남습니다. 나중에 로그인하면 계정으로 가져올지 물어봅니다.'),
+            style: AppType.caption.copyWith(
+                height: 1.6, color: sh.ink.withValues(alpha: 0.45)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Tabs extends StatelessWidget {
+  final _AuthTab current;
+  final ValueChanged<_AuthTab> onPick;
+  const _Tabs({required this.current, required this.onPick});
+
+  @override
+  Widget build(BuildContext context) {
+    final sh = context.sh;
+    final items = [
+      (_AuthTab.signIn, tr('로그인')),
+      (_AuthTab.signUp, tr('계정 만들기')),
+    ];
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: sh.border),
+          borderRadius: BorderRadius.circular(Radii.md),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: IntrinsicHeight(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < items.length; i++)
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => onPick(items[i].$1),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: items[i].$1 == current
+                          ? sh.accent
+                          : Colors.transparent,
+                      border: i == 0
+                          ? null
+                          : Border(left: BorderSide(color: sh.border)),
+                    ),
+                    child: Text(items[i].$2,
+                        style: AppType.body.copyWith(
+                            fontSize: 13.5,
+                            color: items[i].$1 == current ? sh.bg : sh.ink)),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _glow(double size, Color color) => Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-              colors: [color, color.withValues(alpha: 0.0)]),
-        ),
+class _FieldLabel extends StatelessWidget {
+  final String text;
+  const _FieldLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(text,
+            style: AppType.sub.copyWith(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: context.sh.ink.withValues(alpha: 0.60))),
       );
 }
 
-// ─── 흰색 pill 버튼 ──────────────────────────────────────────────
-class _WhitePill extends StatelessWidget {
-  final String label;
-  final bool loading;
-  final VoidCallback? onTap;
-  const _WhitePill(
-      {required this.label, required this.loading, required this.onTap});
+/// 아이디 입력 — 이메일이 아니다. 내부 변환 도메인은 회색으로 덧붙여 보여준다.
+class _IdField extends StatelessWidget {
+  final TextEditingController controller;
+  final bool enabled;
+  final String? error;
+  final ValueChanged<String> onChanged;
+
+  const _IdField({
+    required this.controller,
+    required this.enabled,
+    required this.error,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        elevation: 0,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(28),
-          onTap: onTap,
-          child: Ink(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.12),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
+    final sh = context.sh;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: sh.card2,
+            border: Border.all(color: error == null ? sh.border : sh.danger),
+            borderRadius: BorderRadius.circular(Radii.md),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  enabled: enabled,
+                  onChanged: onChanged,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  keyboardType: TextInputType.text,
+                  style: AppType.body.copyWith(fontSize: 14, color: sh.ink),
+                  decoration: InputDecoration(
+                    hintText: tr('영문·숫자·밑줄 4–20자'),
+                    hintStyle: TextStyle(
+                        color: sh.ink.withValues(alpha: Alpha.placeholder)),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 11),
+                  ),
                 ),
-              ],
-            ),
-            child: Center(
-              child: loading
-                  ? SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: context.sh.accent),
-                    )
-                  : Text(label,
-                      style: AppType.button.copyWith(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: context.sh.accent)),
-            ),
+              ),
+            ],
           ),
         ),
+        if (error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 5),
+            child: Text(error!,
+                style: AppType.sub
+                    .copyWith(fontSize: 12, height: 1.5, color: sh.danger)),
+          ),
+      ],
+    );
+  }
+}
+
+class _PasswordField extends StatelessWidget {
+  final TextEditingController controller;
+  final bool obscure;
+  final bool enabled;
+  final VoidCallback onToggle;
+  final ValueChanged<String> onChanged;
+
+  const _PasswordField({
+    required this.controller,
+    required this.obscure,
+    required this.enabled,
+    required this.onToggle,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sh = context.sh;
+    return Container(
+      padding: const EdgeInsets.only(left: 10, right: 4),
+      decoration: BoxDecoration(
+        color: sh.card2,
+        border: Border.all(color: sh.border),
+        borderRadius: BorderRadius.circular(Radii.md),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              enabled: enabled,
+              obscureText: obscure,
+              onChanged: onChanged,
+              style: AppType.body.copyWith(fontSize: 14, color: sh.ink),
+              decoration: InputDecoration(
+                hintText: tr('6자 이상'),
+                hintStyle: TextStyle(
+                    color: sh.ink.withValues(alpha: Alpha.placeholder)),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 11),
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: onToggle,
+            icon: Icon(
+                obscure
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+                size: 16,
+                color: sh.ink.withValues(alpha: 0.45)),
+            tooltip: tr(obscure ? '비밀번호 보기' : '비밀번호 가리기'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OrDivider extends StatelessWidget {
+  const _OrDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    final sh = context.sh;
+    return Row(
+      children: [
+        Expanded(child: Container(height: 1, color: sh.border)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Gap.sm),
+          child: Text(tr('또는'),
+              style: AppType.label
+                  .copyWith(color: sh.ink.withValues(alpha: 0.45))),
+        ),
+        Expanded(child: Container(height: 1, color: sh.border)),
+      ],
+    );
+  }
+}
+
+class _SocialButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _SocialButton(
+      {required this.icon, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final sh = context.sh;
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, size: 17),
+        label: Text(label, style: AppType.button.copyWith(fontSize: 14.5)),
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(48),
+          shape: const StadiumBorder(),
+          side: BorderSide(color: sh.border),
+          foregroundColor: sh.ink,
+          backgroundColor: sh.card,
+        ),
+      ),
+    );
+  }
+}
+
+class _WarnBanner extends StatelessWidget {
+  final String text;
+  const _WarnBanner({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final sh = context.sh;
+    return Container(
+      padding: const EdgeInsets.all(Gap.md),
+      decoration: BoxDecoration(
+        color: sh.accent2Bg,
+        borderRadius: BorderRadius.circular(Radii.md),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(Icons.error_outline_rounded,
+                size: 16, color: sh.accent2Ink),
+          ),
+          const SizedBox(width: Gap.sm),
+          Expanded(
+            child: Text(text,
+                style: AppType.sub
+                    .copyWith(height: 1.55, color: sh.accent2Ink)),
+          ),
+        ],
       ),
     );
   }
