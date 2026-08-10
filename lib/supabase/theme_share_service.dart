@@ -77,6 +77,31 @@ class ThemeShareService {
     }
   }
 
+  /// owner가 공유를 내린다 — theme_shares 행을 실제로 삭제.
+  ///
+  /// 예전에는 캘린더를 삭제해도 로컬 테마만 지워서 서버 행이 그대로 남았다.
+  /// 구독자에게는 계속 보이고 공유 링크도 계속 살아 있었다(스펙 §19).
+  ///
+  /// RLS 상 `created_by == auth.uid()` 인 행만 지워지므로, 구독자가 불러도
+  /// 남의 공유를 지울 수 없다. 실패해도 예외를 던지지 않는다 — 로컬 삭제까지
+  /// 막히면 사용자가 화면에서 지울 방법이 없어진다.
+  static Future<bool> deleteShare(String code) async {
+    final client = sb;
+    final uid = client?.auth.currentUser?.id;
+    if (client == null || uid == null) return false;
+    try {
+      await client
+          .from('theme_shares')
+          .delete()
+          .eq('code', code)
+          .eq('created_by', uid);
+      return true;
+    } catch (e) {
+      debugPrint('[ThemeShare] deleteShare 실패: $e');
+      return false;
+    }
+  }
+
   // 공유 코드로 payload(테마 + 일정) 가져오기. v1(테마만)도 폴백 파싱.
   static Future<SharedThemePayload?> fetchPayloadByCode(String code) async {
     final client = sb;

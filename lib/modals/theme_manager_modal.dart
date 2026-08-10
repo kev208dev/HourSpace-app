@@ -15,6 +15,8 @@ import '../supabase/theme_share_service.dart';
 import '../widgets/mascot/mascot.dart';
 import '../widgets/mascot/mascot_feedback.dart';
 import 'share_code_modal.dart';
+import '../providers/shared_theme_events_provider.dart';
+import '../providers/filter_provider.dart';
 
 Future<void> showThemeManagerModal(BuildContext context) {
   return showModalBottomSheet(
@@ -616,9 +618,15 @@ class _ThemeRowState extends ConsumerState<_ThemeRow> {
     // 빠지는 사고 방지. 메시지는 역할에 맞춰 분기.
     final isSubscriber = widget.theme.shareRole == 'subscriber';
     final title = isSubscriber ? tr('구독 취소') : tr('삭제');
+    final code = widget.theme.shareCode;
+    final isSharedOwner = !isSubscriber && code != null && code.isNotEmpty;
     final msg = isSubscriber
         ? trf('"{0}" 공유달력 구독을 취소할까요?', [widget.theme.name])
-        : trf('"{0}" 캘린더를 삭제할까요?', [widget.theme.name]);
+        : isSharedOwner
+            // 공유 중인 캘린더는 남에게도 영향을 준다 — 그 사실을 미리 알린다.
+            ? trf('"{0}" 캘린더를 삭제할까요?\n공유가 내려가고 구독 중인 사람에게도 더 이상 보이지 않아요.',
+                [widget.theme.name])
+            : trf('"{0}" 캘린더를 삭제할까요?', [widget.theme.name]);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -638,7 +646,30 @@ class _ThemeRowState extends ConsumerState<_ThemeRow> {
       ),
     );
     if (ok != true) return;
+
+    // 원격 정리를 먼저 한다 — 로컬만 지우면 서버 행과 캐시가 고아로 남는다.
+    if (isSharedOwner) {
+      final removed = await ThemeShareService.deleteShare(code);
+      if (!removed && mounted) {
+        // 서버에서 못 지웠으면 조용히 넘어가지 않는다 — 남에게는 계속 보인다.
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('공유를 내리지 못했어요. 네트워크를 확인해 주세요'))),
+        );
+        return;
+      }
+    }
+    if (isSubscriber) {
+      // 구독 취소 — 받아 둔 일정 캐시도 함께 비운다.
+      await ref
+          .read(sharedThemeEventsProvider.notifier)
+          .removeTheme(widget.theme.id);
+    }
     ref.read(themesProvider.notifier).delete(widget.theme.id);
+    // 이 캘린더의 필터 상태도 정리 — 지운 캘린더가 숨김 목록에 남지 않도록.
+    final hidden = ref.read(filterProvider);
+    if (hidden.contains(widget.theme.id)) {
+      await ref.read(filterProvider.notifier).toggle(widget.theme.id);
+    }
   }
 
   Future<void> _shareTheme(BuildContext context) async {
