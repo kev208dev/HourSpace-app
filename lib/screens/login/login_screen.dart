@@ -5,8 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../supabase/auth_service.dart';
 import '../../i18n/strings.dart';
 import '../../modals/login_modal.dart';
-import '../../widgets/mascot/mascot.dart';
-import '../../widgets/mascot/mascot_feedback.dart';
+import '../../widgets/app_toast.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/theme/design_tokens.dart';
 
 /// 전체화면 로그인 — 스플래시/온보딩과 같은 보라→블루 그라데이션 톤.
 /// 기존 인증 로직(signInGoogle / 아이디 폼)을 그대로 재사용한다.
@@ -41,7 +42,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } catch (_) {
       if (mounted) {
         setState(() => _loading = false);
-        MascotToast.error(context, tr('로그인에 실패했어요. 잠시 후 다시 시도해주세요'));
+        AppToast.error(context, tr('로그인에 실패했어요. 잠시 후 다시 시도해주세요'));
       }
     }
   }
@@ -88,10 +89,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   children: [
                     const Spacer(flex: 2),
                     // ── 마스코트 + 워드마크 + 헤드라인 ──
-                    const MascotView(
-                        expression: MascotExpression.happy,
-                        size: 140,
-                        showStars: true),
+                    Icon(Icons.calendar_month_rounded, size: 56),
                     const SizedBox(height: 22),
                     Text('Surlap',
                         style: GoogleFonts.spaceGrotesk(
@@ -214,17 +212,17 @@ class _WhitePill extends StatelessWidget {
             ),
             child: Center(
               child: loading
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 22,
                       height: 22,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: MascotColors.deepPurple),
+                          strokeWidth: 2, color: context.sh.accent),
                     )
                   : Text(label,
-                      style: const TextStyle(
+                      style: AppType.button.copyWith(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
-                          color: MascotColors.deepPurple)),
+                          color: context.sh.accent)),
             ),
           ),
         ),

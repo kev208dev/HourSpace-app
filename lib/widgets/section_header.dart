@@ -32,7 +32,7 @@ class SectionHeader extends StatelessWidget {
         children: [
           Text(
             title,
-            style: AppType.titleMedium
+            style: AppType.cardTitle
                 .copyWith(color: sh.ink, fontWeight: FontWeight.w800),
           ),
           const Spacer(),
@@ -48,7 +48,7 @@ class SectionHeader extends StatelessWidget {
                 minimumSize: const Size(0, kMinTouch),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: Text(actionLabel!, style: AppType.bodyMedium),
+              child: Text(actionLabel!, style: AppType.sub),
             ),
           ],
         ],

@@ -51,7 +51,7 @@ class _GuestImportDialog extends StatelessWidget {
           borderRadius: BorderRadius.circular(Radii.card)),
       title: Text(
         trf('기존 데이터 {0}개를 계정으로 가져올까요?', [summary.itemCount]),
-        style: AppType.titleMedium.copyWith(color: sh.ink),
+        style: AppType.cardTitle.copyWith(color: sh.ink),
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -65,7 +65,7 @@ class _GuestImportDialog extends StatelessWidget {
           const SizedBox(height: Gap.md),
           Text(
             tr('가져오지 않아도 로그아웃하면 다시 볼 수 있어요.'),
-            style: AppType.bodySmall.copyWith(color: sh.inkFaint),
+            style: AppType.caption.copyWith(color: sh.inkFaint),
           ),
         ],
       ),
@@ -88,7 +88,7 @@ class _GuestImportDialog extends StatelessWidget {
           children: [
             Expanded(
               child: Text(label,
-                  style: AppType.bodyLarge.copyWith(color: sh.inkSoft)),
+                  style: AppType.body.copyWith(color: sh.inkSoft)),
             ),
             Text('$count',
                 style: AppType.number.copyWith(color: sh.ink)),

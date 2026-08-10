@@ -80,7 +80,7 @@ class _LoginModalState extends ConsumerState<LoginModal> {
             ),
             const SizedBox(height: Gap.sm),
             Text(tr('사용 방식을 선택해주세요'),
-                style: AppType.bodyLarge.copyWith(color: sh.inkSoft)),
+                style: AppType.body.copyWith(color: sh.inkSoft)),
             const SizedBox(height: 28),
             if (!_showForm) ...[
               // ── Apple 로그인 (iOS only, App Store 4.8 요구사항) ──
@@ -139,7 +139,7 @@ class _LoginModalState extends ConsumerState<LoginModal> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: Gap.md),
                   child: Text(tr('또는'),
-                      style: AppType.bodySmall.copyWith(color: sh.inkFaint)),
+                      style: AppType.caption.copyWith(color: sh.inkFaint)),
                 ),
                 Expanded(child: Divider(color: sh.border)),
               ]),
@@ -169,7 +169,7 @@ class _LoginModalState extends ConsumerState<LoginModal> {
                     color: sh.danger.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(Radii.small)),
                   child: Text(_error!,
-                      style: AppType.bodyLarge.copyWith(color: sh.danger)),
+                      style: AppType.body.copyWith(color: sh.danger)),
                 ),
               TextField(
                 controller: _idCtrl,

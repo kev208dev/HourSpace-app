@@ -368,7 +368,7 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(22)),
           title: Text(trf('{0}요일 {1}:00 · 매주 반복', [_dowNames[col], hour]),
-              style: AppType.titleMedium.copyWith(
+              style: AppType.cardTitle.copyWith(
                   fontWeight: FontWeight.w800, color: sh.ink)),
           content: TextField(
             controller: ctrl,
@@ -433,9 +433,9 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
               contentPadding: EdgeInsets.zero,
               leading: Icon(Icons.ios_share_rounded, color: sh.accent),
               title: Text(tr('이미지로 공유'),
-                  style: AppType.bodyLarge.copyWith(color: sh.ink)),
+                  style: AppType.body.copyWith(color: sh.ink)),
               subtitle: Text(tr('시간표를 깔끔한 이미지로 내보내요'),
-                  style: AppType.bodySmall.copyWith(color: sh.inkSoft)),
+                  style: AppType.caption.copyWith(color: sh.inkSoft)),
               onTap: () {
                 Navigator.pop(mctx);
                 openTimetableExport(context);
@@ -446,9 +446,9 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
               leading: Icon(Icons.palette_outlined,
                   color: _designMode ? sh.accent : sh.inkSoft),
               title: Text(tr('셀 디자인'),
-                  style: AppType.bodyLarge.copyWith(color: sh.ink)),
+                  style: AppType.body.copyWith(color: sh.ink)),
               subtitle: Text(_designMode ? tr('켜짐 — 셀을 눌러 꾸미기') : tr('꺼짐'),
-                  style: AppType.bodySmall.copyWith(color: sh.inkSoft)),
+                  style: AppType.caption.copyWith(color: sh.inkSoft)),
               trailing: Switch.adaptive(
                 value: _designMode,
                 activeThumbColor: sh.accent,
@@ -466,7 +466,7 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
               contentPadding: EdgeInsets.zero,
               leading: Icon(Icons.school_outlined, color: sh.inkSoft),
               title: Text(tr('학교 연결 (NEIS)'),
-                  style: AppType.bodyLarge.copyWith(color: sh.ink)),
+                  style: AppType.body.copyWith(color: sh.ink)),
               onTap: () {
                 Navigator.pop(mctx);
                 showNeisSetupModal(context);
@@ -476,7 +476,7 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
               contentPadding: EdgeInsets.zero,
               leading: Icon(Icons.refresh_rounded, color: sh.inkSoft),
               title: Text(tr('시간표·학사일정 새로고침'),
-                  style: AppType.bodyLarge.copyWith(color: sh.ink)),
+                  style: AppType.body.copyWith(color: sh.ink)),
               onTap: () {
                 Navigator.pop(mctx);
                 ref.read(neisCacheProvider.notifier).refresh();
@@ -592,7 +592,7 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
                 _designMode ? tr('스케줄표 · 디자인') : tr('스케줄표'),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppType.titleLarge.copyWith(
+                style: AppType.title.copyWith(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                     color: _designMode ? sh.accent : sh.ink),
@@ -623,7 +623,7 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
                 children: [
                   Text(
                     '${trf('{0}월 {1}일', [date.month, date.day])} (${tr(_dowNames[col])})',
-                    style: AppType.titleMedium.copyWith(
+                    style: AppType.cardTitle.copyWith(
                         fontWeight: FontWeight.w800,
                         color: isToday ? sh.accent : dowColor),
                   ),
@@ -631,7 +631,7 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
                     Padding(
                       padding: const EdgeInsets.only(top: 1),
                       child: Text(tr('오늘로 돌아가기'),
-                          style: AppType.labelMedium
+                          style: AppType.label
                               .copyWith(color: sh.inkSoft)),
                     ),
                 ],
@@ -679,7 +679,7 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
               child: Text(events.join('  ·  '),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: AppType.bodySmall.copyWith(
+                  style: AppType.caption.copyWith(
                       color: sh.ink, fontWeight: FontWeight.w600)),
             ),
           ],
@@ -767,7 +767,7 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
         child: Text(
           _fmtTime(h * 60),
           textAlign: TextAlign.right,
-          style: AppType.labelMedium.copyWith(
+          style: AppType.label.copyWith(
               color: sh.inkFaint,
               fontFeatures: const [ui.FontFeature.tabularFigures()]),
         ),
@@ -791,7 +791,7 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
         ? sh.accent
         : isLunch
             ? const Color(0xFFEC8C3C)
-            : sh.accentLight;
+            : sh.accent;
     final bg = design.bg ??
         (isLunch
             ? (sh.dark ? sh.card2 : const Color(0xFFFFF3EC))
@@ -846,7 +846,7 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
                           child: Text(title,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: AppType.bodyMedium.copyWith(
+                              style: AppType.sub.copyWith(
                                   color: ink,
                                   fontWeight: design.bold
                                       ? FontWeight.w800
@@ -859,7 +859,7 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style:
-                            AppType.labelMedium.copyWith(color: sh.inkSoft)),
+                            AppType.label.copyWith(color: sh.inkSoft)),
                   ],
                 ),
               ),
@@ -913,11 +913,11 @@ class _TimetableViewState extends ConsumerState<TimetableView> {
             const SizedBox(height: Gap.sm),
             Text(tr('이 날은 등록된 일정이 없어요'),
                 textAlign: TextAlign.center,
-                style: AppType.bodyMedium.copyWith(color: sh.inkSoft)),
+                style: AppType.sub.copyWith(color: sh.inkSoft)),
             const SizedBox(height: Gap.xs),
             Text(tr('빈 곳을 눌러 일정을 추가하세요'),
                 textAlign: TextAlign.center,
-                style: AppType.bodySmall.copyWith(color: sh.inkFaint)),
+                style: AppType.caption.copyWith(color: sh.inkFaint)),
           ],
         ),
       );
@@ -1026,7 +1026,7 @@ class _DesignPanelState extends State<_DesignPanel> {
             ),
           ),
           Row(children: [
-            Text(tr('셀 디자인'), style: AppType.titleMedium.copyWith(
+            Text(tr('셀 디자인'), style: AppType.cardTitle.copyWith(
                 fontWeight: FontWeight.w800, color: sh.ink)),
             const Spacer(),
             TextButton(
@@ -1039,7 +1039,7 @@ class _DesignPanelState extends State<_DesignPanel> {
             ),
           ]),
           const SizedBox(height: Gap.md),
-          Text(tr('배경색'), style: AppType.bodySmall.copyWith(color: sh.inkSoft)),
+          Text(tr('배경색'), style: AppType.caption.copyWith(color: sh.inkSoft)),
           const SizedBox(height: Gap.xs),
           Wrap(
             spacing: Gap.sm,
@@ -1077,7 +1077,7 @@ class _DesignPanelState extends State<_DesignPanel> {
           ),
           const SizedBox(height: Gap.md),
           Row(children: [
-            Text(tr('굵게'), style: AppType.bodySmall.copyWith(color: sh.inkSoft)),
+            Text(tr('굵게'), style: AppType.caption.copyWith(color: sh.inkSoft)),
             const SizedBox(width: Gap.sm),
             Switch(
               value: _bold,
@@ -1236,7 +1236,7 @@ class _TimetableExportPageState extends ConsumerState<TimetableExportPage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(tr('시간표 공유'),
-            style: AppType.titleLarge.copyWith(
+            style: AppType.title.copyWith(
                 fontSize: 18, fontWeight: FontWeight.w800, color: sh.ink)),
       ),
       body: Column(
@@ -1345,7 +1345,7 @@ class _TimetableExportPageState extends ConsumerState<TimetableExportPage> {
                   : sh.ink.withValues(alpha: 0.08)),
         ),
         child: Text(label,
-            style: AppType.labelMedium.copyWith(
+            style: AppType.label.copyWith(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: active ? sh.accent : sh.inkSoft)),

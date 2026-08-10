@@ -26,14 +26,13 @@ import '../../providers/sports_provider.dart';
 import '../../providers/shared_theme_events_provider.dart';
 import '../../providers/recurring_events_provider.dart';
 import '../../core/utils/todo_style.dart';
-import '../../widgets/mascot/mascot.dart';
-import '../../widgets/mascot/mascot_feedback.dart';
 import '../../models/event_item.dart';
 import '../../models/todo_item.dart';
 import '../../models/calendar_theme.dart';
 import '../../modals/add_edit_event_modal.dart';
 import '../../modals/add_todo_modal.dart';
 import '../../modals/event_detail_sheet.dart';
+import '../../widgets/app_toast.dart';
 
 /// 일별 뷰 — 주간 뷰의 하루를 확대한 형태.
 /// 왼쪽에 시간대(0~23시) 축을 두고, 시간 일정은 해당 시각에 블록으로 배치한다.
@@ -184,7 +183,7 @@ class _DayViewState extends ConsumerState<DayView> {
               const SizedBox(width: 2),
               Text(
                 i18nd.monthDay(date),
-                style: AppType.titleLarge.copyWith(
+                style: AppType.title.copyWith(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.3,
@@ -195,7 +194,7 @@ class _DayViewState extends ConsumerState<DayView> {
                 padding: const EdgeInsets.only(top: 2),
                 child: Text(
                   _dowName(date.weekday),
-                  style: AppType.bodyLarge.copyWith(
+                  style: AppType.body.copyWith(
                       fontWeight: FontWeight.w700,
                       color: isToday ? sh.accent : sh.inkSoft),
                 ),
@@ -244,7 +243,7 @@ class _DayViewState extends ConsumerState<DayView> {
                   .any((t) => t.id == id && t.status == 1);
               ref.read(todosProvider.notifier).toggleDone(id);
               if (willComplete) {
-                MascotToast.success(context, tr('좋아요! 하나 끝냈어요'));
+                AppToast.success(context, tr('좋아요! 하나 끝냈어요'));
               }
             },
             onTapTodo: (t) => showAddTodoModal(context, edit: t),
@@ -364,17 +363,15 @@ class _DayViewState extends ConsumerState<DayView> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const MascotView(
-                                expression: MascotExpression.sleepy,
-                                size: 96),
+                            Icon(Icons.event_available_rounded, size: 30),
                             const SizedBox(height: 10),
                             Text(tr('이 날은 아직 비어있어요'),
-                                style: AppType.bodyLarge.copyWith(
+                                style: AppType.body.copyWith(
                                     color: sh.inkFaint,
                                     fontWeight: FontWeight.w600)),
                             const SizedBox(height: 2),
                             Text(tr('탭해서 일정을 추가해보세요'),
-                                style: AppType.labelMedium
+                                style: AppType.label
                                     .copyWith(color: sh.inkFaint)),
                           ],
                         ),
@@ -646,7 +643,7 @@ class _TodoBar extends StatelessWidget {
                         t.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AppType.bodyLarge.copyWith(
+                        style: AppType.body.copyWith(
                           color: t.done ? sh.inkFaint : sh.ink,
                           decoration:
                               t.done ? TextDecoration.lineThrough : null,
@@ -707,11 +704,11 @@ class _AllDayBar extends StatelessWidget {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(e.t,
-                            style: AppType.bodyLarge.copyWith(
+                            style: AppType.body.copyWith(
                                 color: c, fontWeight: FontWeight.w600)),
                       ),
                     ])
-                  : Text(e.t, style: AppType.bodyLarge.copyWith(color: sh.ink)),
+                  : Text(e.t, style: AppType.body.copyWith(color: sh.ink)),
             );
           }),
         ],
@@ -917,7 +914,7 @@ class _TimedEventBlockState extends State<_TimedEventBlock> {
                               offset: const Offset(0, 1),
                             )]
                           // 라이트 모드: soft shadow (테두리 없이 떠 보이게)
-                          : Shadows.subtle),
+                          : sh.shadowCard),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -941,7 +938,7 @@ class _TimedEventBlockState extends State<_TimedEventBlock> {
                       child: Text(
                         e.t,
                         // 본문 굵게 + ink 풀톤 → 죽인 그리드 위에서 또렷.
-                        style: AppType.bodySmall.copyWith(
+                        style: AppType.caption.copyWith(
                             fontWeight: FontWeight.w700, color: sh.ink),
                         maxLines: liveHeight > widget.rowH ? 3 : 1,
                         overflow: TextOverflow.ellipsis,

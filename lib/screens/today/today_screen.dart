@@ -156,12 +156,12 @@ class _Greeting extends ConsumerWidget {
             children: [
               Text(
                 '${i18nd.monthDay(now)} ${i18nd.weekdayShort(now.weekday)}',
-                style: AppType.titleMedium.copyWith(
+                style: AppType.cardTitle.copyWith(
                     fontWeight: FontWeight.w800, color: sh.ink),
               ),
               const SizedBox(height: 2),
               Text(tr(_greetingFor(now.hour)),
-                  style: AppType.bodyLarge.copyWith(color: sh.inkSoft)),
+                  style: AppType.body.copyWith(color: sh.inkSoft)),
             ],
           ),
         ),
@@ -220,7 +220,7 @@ class NowCard extends StatelessWidget {
         color: sh.card,
         borderRadius: BorderRadius.circular(Radii.card),
         border: Border.all(color: accentColor.withValues(alpha: 0.35)),
-        boxShadow: Shadows.subtle,
+        boxShadow: sh.shadowCard,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,12 +245,12 @@ class NowCard extends StatelessWidget {
             item.title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: AppType.headlineLarge.copyWith(color: sh.ink),
+            style: AppType.display.copyWith(color: sh.ink),
           ),
           const SizedBox(height: Gap.xs),
           Text(
             _timeRange,
-            style: AppType.titleMedium
+            style: AppType.cardTitle
                 .copyWith(color: sh.inkSoft, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: Gap.lg),
@@ -259,7 +259,7 @@ class NowCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   _countdown(context),
-                  style: AppType.titleMedium.copyWith(
+                  style: AppType.cardTitle.copyWith(
                     color: accentColor,
                     fontWeight: FontWeight.w800,
                   ),
@@ -319,10 +319,10 @@ class _NothingNowCard extends ConsumerWidget {
           Text(tr('지금'), style: AppType.eyebrow.copyWith(color: sh.inkFaint)),
           const SizedBox(height: Gap.md),
           Text(tr('예정된 일정이 없어요'),
-              style: AppType.titleLarge.copyWith(color: sh.ink)),
+              style: AppType.title.copyWith(color: sh.ink)),
           const SizedBox(height: Gap.xs),
           Text(tr('오늘은 여유가 있네요'),
-              style: AppType.bodyLarge.copyWith(color: sh.inkSoft)),
+              style: AppType.body.copyWith(color: sh.inkSoft)),
           const SizedBox(height: Gap.md),
           Align(
             alignment: Alignment.centerLeft,
@@ -381,7 +381,7 @@ class _UpcomingRow extends ConsumerWidget {
                 item.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppType.bodyLarge
+                style: AppType.body
                     .copyWith(color: sh.ink, fontWeight: FontWeight.w600),
               ),
             ),
@@ -429,7 +429,7 @@ class _TodoRow extends ConsumerWidget {
                 todo.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppType.bodyLarge.copyWith(
+                style: AppType.body.copyWith(
                   color: todo.done ? sh.inkFaint : sh.ink,
                   decoration: todo.done ? TextDecoration.lineThrough : null,
                   decorationColor: sh.inkFaint,
@@ -439,7 +439,7 @@ class _TodoRow extends ConsumerWidget {
             if (todo.hasPriority)
               Text(
                 'P${todo.priority}',
-                style: AppType.labelMedium.copyWith(
+                style: AppType.label.copyWith(
                   color: todoPriorityColor(todo.priority, sh),
                   fontWeight: FontWeight.w800,
                 ),
@@ -468,7 +468,7 @@ class _QuietLine extends StatelessWidget {
         children: [
           Expanded(
             child: Text(text,
-                style: AppType.bodyLarge.copyWith(color: sh.inkFaint)),
+                style: AppType.body.copyWith(color: sh.inkFaint)),
           ),
           if (actionLabel != null)
             TextButton(onPressed: onAction, child: Text(actionLabel!)),
@@ -511,17 +511,17 @@ class _SchoolSection extends ConsumerWidget {
         ),
         if (meal != null && meal.trim().isNotEmpty) ...[
           Text(tr('오늘 급식'),
-              style: AppType.bodySmall.copyWith(color: sh.inkFaint)),
+              style: AppType.caption.copyWith(color: sh.inkFaint)),
           const SizedBox(height: 2),
           Text(
             meal.replaceAll('\n', ' · '),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: AppType.bodyLarge.copyWith(color: sh.ink),
+            style: AppType.body.copyWith(color: sh.ink),
           ),
         ] else
           Text(tr('오늘 급식 정보가 없어요'),
-              style: AppType.bodyLarge.copyWith(color: sh.inkFaint)),
+              style: AppType.body.copyWith(color: sh.inkFaint)),
         if (highlight != null) ...[
           const SizedBox(height: Gap.md),
           Row(
@@ -530,7 +530,7 @@ class _SchoolSection extends ConsumerWidget {
                 child: Text(highlight.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppType.bodyLarge.copyWith(
+                    style: AppType.body.copyWith(
                         color: sh.ink, fontWeight: FontWeight.w600)),
               ),
               Text(
@@ -569,7 +569,7 @@ class _ConnectSchoolPrompt extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(tr('학교를 연결하면\n시간표·급식·학사일정을 자동으로 볼 수 있어요.'),
-              style: AppType.bodyLarge.copyWith(color: sh.inkSoft)),
+              style: AppType.body.copyWith(color: sh.inkSoft)),
           const SizedBox(height: Gap.md),
           FilledButton(onPressed: onConnect, child: Text(tr('학교 연결'))),
         ],

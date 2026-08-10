@@ -42,7 +42,7 @@ class _SportColorPicker extends StatelessWidget {
           Row(
             children: [
               Text('달력 표시 색',
-                  style: AppType.titleMedium
+                  style: AppType.cardTitle
                       .copyWith(fontWeight: FontWeight.w800, color: sh.ink)),
               const Spacer(),
               // 항상 보이는 닫기(×) 버튼.

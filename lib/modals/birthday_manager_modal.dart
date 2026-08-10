@@ -5,8 +5,8 @@ import '../core/theme/design_tokens.dart';
 import '../i18n/strings.dart';
 import '../providers/birthdays_provider.dart';
 import '../providers/birthday_notify_provider.dart';
-import '../widgets/mascot/mascot.dart';
-import '../widgets/mascot/mascot_feedback.dart';
+import '../widgets/ui_kit.dart';
+import '../widgets/app_toast.dart';
 
 Future<void> showBirthdayManagerModal(BuildContext context) =>
     showModalBottomSheet(
@@ -61,11 +61,11 @@ class _BirthdayManagerModalState extends ConsumerState<BirthdayManagerModal> {
     FocusScope.of(context).unfocus();
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
-      MascotToast.error(context, tr('이름을 입력해 주세요'));
+      AppToast.error(context, tr('이름을 입력해 주세요'));
       return;
     }
     if (_picked == null) {
-      MascotToast.error(context, tr('생일 날짜를 선택해 주세요'));
+      AppToast.error(context, tr('생일 날짜를 선택해 주세요'));
       return;
     }
     ref
@@ -83,7 +83,7 @@ class _BirthdayManagerModalState extends ConsumerState<BirthdayManagerModal> {
       _nameCtrl.clear();
       _picked = null;
     });
-    MascotToast.success(context, trf('{0} 생일을 추가했어요', [name]));
+    AppToast.success(context, trf('{0} 생일을 추가했어요', [name]));
   }
 
   @override
@@ -118,7 +118,7 @@ class _BirthdayManagerModalState extends ConsumerState<BirthdayManagerModal> {
                     const SizedBox(width: 8),
                     Text(
                       tr('생일 챙기기'),
-                      style: AppType.titleLarge.copyWith(
+                      style: AppType.title.copyWith(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: sh.ink,
@@ -158,7 +158,7 @@ class _BirthdayManagerModalState extends ConsumerState<BirthdayManagerModal> {
                               Expanded(
                                 child: Text(
                                   tr('생일 알림'),
-                                  style: AppType.bodyLarge.copyWith(
+                                  style: AppType.body.copyWith(
                                     fontWeight: FontWeight.w600,
                                     color: sh.ink,
                                   ),
@@ -179,7 +179,7 @@ class _BirthdayManagerModalState extends ConsumerState<BirthdayManagerModal> {
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 tr('미리 알림'),
-                                style: AppType.labelMedium.copyWith(
+                                style: AppType.label.copyWith(
                                   color: sh.inkSoft,
                                 ),
                               ),
@@ -214,7 +214,7 @@ class _BirthdayManagerModalState extends ConsumerState<BirthdayManagerModal> {
                     // ── 직접 추가 ──
                     Text(
                       tr('직접 추가'),
-                      style: AppType.labelMedium.copyWith(
+                      style: AppType.label.copyWith(
                         fontWeight: FontWeight.w700,
                         color: sh.inkSoft,
                       ),
@@ -227,7 +227,7 @@ class _BirthdayManagerModalState extends ConsumerState<BirthdayManagerModal> {
                         children: [
                           TextField(
                             controller: _nameCtrl,
-                            style: AppType.bodyLarge.copyWith(color: sh.ink),
+                            style: AppType.body.copyWith(color: sh.ink),
                             decoration: InputDecoration(
                               hintText: tr('이름'),
                               hintStyle: TextStyle(color: sh.inkFaint),
@@ -263,7 +263,7 @@ class _BirthdayManagerModalState extends ConsumerState<BirthdayManagerModal> {
                                                         _picked!.month,
                                                         _picked!.day
                                                       ]),
-                                            style: AppType.bodyLarge.copyWith(
+                                            style: AppType.body.copyWith(
                                               color: _picked == null
                                                   ? sh.inkFaint
                                                   : sh.ink,
@@ -299,7 +299,7 @@ class _BirthdayManagerModalState extends ConsumerState<BirthdayManagerModal> {
                                       const SizedBox(width: 4),
                                       Text(
                                         tr('연도 포함'),
-                                        style: AppType.labelMedium.copyWith(
+                                        style: AppType.label.copyWith(
                                           color: sh.inkSoft,
                                         ),
                                       ),
@@ -337,7 +337,7 @@ class _BirthdayManagerModalState extends ConsumerState<BirthdayManagerModal> {
                       children: [
                         Text(
                           trf('등록된 생일 ({0})', [birthdays.length]),
-                          style: AppType.labelMedium.copyWith(
+                          style: AppType.label.copyWith(
                             fontWeight: FontWeight.w700,
                             color: sh.inkSoft,
                           ),
@@ -348,12 +348,10 @@ class _BirthdayManagerModalState extends ConsumerState<BirthdayManagerModal> {
                     if (birthdays.isEmpty)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: MascotEmptyState(
-                          expression: MascotExpression.neutral,
+                        child: SurlapEmptyState(
+  icon: Icons.cake_rounded,
                           title: tr('아직 등록된 생일이 없어요'),
-                          message: tr('위에서 직접 추가해 보세요'),
-                          mascotSize: 88,
-                          showStars: false,
+                          description: tr('위에서 직접 추가해 보세요'),
                         ),
                       )
                     else
@@ -431,14 +429,14 @@ class _BirthdayRow extends StatelessWidget {
               children: [
                 Text(
                   b.name,
-                  style: AppType.bodyLarge.copyWith(
+                  style: AppType.body.copyWith(
                     fontWeight: FontWeight.w700,
                     color: sh.ink,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                Text(sub, style: AppType.bodySmall.copyWith(color: sh.inkSoft)),
+                Text(sub, style: AppType.caption.copyWith(color: sh.inkSoft)),
               ],
             ),
           ),
@@ -452,7 +450,7 @@ class _BirthdayRow extends StatelessWidget {
             ),
             child: Text(
               dDayLabel(b),
-              style: AppType.labelMedium.copyWith(
+              style: AppType.label.copyWith(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
                 color: dday == 0 ? Colors.white : sh.birthdayColor,
@@ -518,7 +516,7 @@ class _DayChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: AppType.labelMedium.copyWith(
+          style: AppType.label.copyWith(
             fontSize: 11.5,
             fontWeight: FontWeight.w700,
             color: selected ? color : sh.inkSoft,

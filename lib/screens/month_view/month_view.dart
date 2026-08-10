@@ -15,7 +15,6 @@ import '../../providers/todos_provider.dart';
 import '../../providers/template_ranges_provider.dart';
 import '../../providers/record_templates_provider.dart';
 import '../../modals/day_action_sheet.dart';
-import '../../widgets/mascot/mascot.dart';
 import '../../widgets/long_press_hint_bar.dart';
 import 'month_grid.dart';
 
@@ -145,21 +144,18 @@ class MonthView extends ConsumerWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const MascotView(
-                              expression: MascotExpression.happy,
-                              size: 84,
-                              showStars: false),
+                          Icon(Icons.event_note_rounded, size: 30),
                           const SizedBox(height: 14),
                           Text(tr('이 달은 아직 비어 있어요'),
                               textAlign: TextAlign.center,
-                              style: AppType.bodyLarge.copyWith(
+                              style: AppType.body.copyWith(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w800,
                                   color: sh.ink)),
                           const SizedBox(height: 6),
                           Text(tr('아래 + 버튼을 누르거나,\n날짜를 길게 눌러 일정을 추가해 보세요'),
                               textAlign: TextAlign.center,
-                              style: AppType.labelMedium.copyWith(
+                              style: AppType.label.copyWith(
                                   fontSize: 13,
                                   color: sh.inkSoft,
                                   height: 1.45)),

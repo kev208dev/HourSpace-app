@@ -248,7 +248,7 @@ class _Card extends StatelessWidget {
                   borderRadius: BorderRadius.circular(Radii.small),
                 ),
                 child: Text('${index + 1} / $total',
-                    style: AppType.labelMedium.copyWith(
+                    style: AppType.label.copyWith(
                         fontWeight: FontWeight.w700,
                         color: sh.accentInk)),
               ),
@@ -265,14 +265,14 @@ class _Card extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(step.title,
-              style: AppType.titleMedium.copyWith(fontWeight: FontWeight.w700, color: sh.ink)),
+              style: AppType.cardTitle.copyWith(fontWeight: FontWeight.w700, color: sh.ink)),
           const SizedBox(height: Gap.sm),
           Text(step.desc,
-              style: AppType.bodyLarge.copyWith(color: sh.inkSoft, height: 1.45)),
+              style: AppType.body.copyWith(color: sh.inkSoft, height: 1.45)),
           if (step.extra != null) ...[
             const SizedBox(height: Gap.sm),
             Text(step.extra!,
-                style: AppType.bodySmall.copyWith(color: sh.inkFaint, height: 1.45)),
+                style: AppType.caption.copyWith(color: sh.inkFaint, height: 1.45)),
           ],
           const SizedBox(height: Gap.lg),
           Row(

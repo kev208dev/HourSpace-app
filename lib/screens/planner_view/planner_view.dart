@@ -262,7 +262,7 @@ class _PlannerViewState extends ConsumerState<PlannerView> {
               builder: (_, lead, _) => Text(
                 _titleText(lead),
                 maxLines: 1,
-                style: AppType.titleLarge.copyWith(
+                style: AppType.title.copyWith(
                     fontSize: 19,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.3,
@@ -416,7 +416,7 @@ class _PlannerViewState extends ConsumerState<PlannerView> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text('${_dowName(d)} ',
-                        style: AppType.labelMedium.copyWith(
+                        style: AppType.label.copyWith(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                             color: isToday
@@ -436,7 +436,7 @@ class _PlannerViewState extends ConsumerState<PlannerView> {
                               borderRadius: BorderRadius.circular(999))
                           : null,
                       child: Text('${d.day}',
-                          style: AppType.labelMedium.copyWith(
+                          style: AppType.label.copyWith(
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
                               color: isToday ? Colors.white : sh.ink)),

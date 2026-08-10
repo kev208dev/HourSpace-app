@@ -12,11 +12,11 @@ import '../providers/themes_provider.dart';
 import '../providers/events_provider.dart';
 import '../supabase/auth_service.dart';
 import '../supabase/theme_share_service.dart';
-import '../widgets/mascot/mascot.dart';
-import '../widgets/mascot/mascot_feedback.dart';
 import 'share_code_modal.dart';
 import '../providers/shared_theme_events_provider.dart';
 import '../providers/filter_provider.dart';
+import '../widgets/ui_kit.dart';
+import '../widgets/app_toast.dart';
 
 Future<void> showThemeManagerModal(BuildContext context) {
   return showModalBottomSheet(
@@ -69,7 +69,7 @@ class ThemeManagerModal extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(tr('공유 캘린더'),
-                            style: AppType.titleLarge.copyWith(
+                            style: AppType.title.copyWith(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
                                 color: sh.ink)),
@@ -126,12 +126,10 @@ class ThemeManagerBody extends ConsumerWidget {
         if (allEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: MascotEmptyState(
-              expression: MascotExpression.neutral,
+            child: SurlapEmptyState(
+  icon: Icons.palette_rounded,
               title: tr('아직 만든 캘린더가 없어요'),
-              message: tr('캘린더를 만들어 일정을 색으로 구분해요'),
-              mascotSize: 92,
-              showStars: false,
+              description: tr('캘린더를 만들어 일정을 색으로 구분해요'),
             ),
           ),
         if (local.isNotEmpty) ...[
@@ -223,7 +221,7 @@ class ThemeManagerBody extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: sh.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(tr('공유 코드 입력'), style: AppType.titleMedium.copyWith(color: sh.ink)),
+        title: Text(tr('공유 코드 입력'), style: AppType.cardTitle.copyWith(color: sh.ink)),
         content: TextField(
           controller: ctrl,
           autofocus: true,
@@ -244,7 +242,7 @@ class ThemeManagerBody extends ConsumerWidget {
                 final theme = await ThemeShareService.fetchByCode(code);
                 if (theme == null) {
                   if (context.mounted) {
-                    MascotToast.error(context, tr('해당 코드의 캘린더를 찾을 수 없어요'));
+                    AppToast.error(context, tr('해당 코드의 캘린더를 찾을 수 없어요'));
                   }
                   return;
                 }
@@ -252,11 +250,11 @@ class ThemeManagerBody extends ConsumerWidget {
                 final subTheme = theme.copyWith(shareRole: 'subscriber');
                 ref.read(themesProvider.notifier).add(subTheme);
                 if (context.mounted) {
-                  MascotToast.success(context, trf('캘린더 "{0}" 가져왔어요', [theme.name]));
+                  AppToast.success(context, trf('캘린더 "{0}" 가져왔어요', [theme.name]));
                 }
               } catch (e) {
                 if (context.mounted) {
-                  MascotToast.error(context, tr('가져오기에 실패했어요'));
+                  AppToast.error(context, tr('가져오기에 실패했어요'));
                 }
               }
             },
@@ -277,7 +275,7 @@ class _GroupLabel extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(0, Gap.lg, 0, Gap.sm),
     child: Text(text,
-        style: AppType.labelMedium.copyWith(
+        style: AppType.label.copyWith(
             fontWeight: FontWeight.w800, color: sh.inkSoft)),
   );
 }
@@ -381,7 +379,7 @@ class _ThemeRowState extends ConsumerState<_ThemeRow> {
                     ]),
                     const SizedBox(height: 2),
                     Text(subtitle,
-                        style: AppType.bodySmall.copyWith(color: sh.inkSoft)),
+                        style: AppType.caption.copyWith(color: sh.inkSoft)),
                   ],
                 ),
               ),
@@ -418,7 +416,7 @@ class _ThemeRowState extends ConsumerState<_ThemeRow> {
 
   // 이름 — 평소엔 카드 제목 텍스트, 탭하면 편집 모드.
   Widget _nameField(SurlapColors sh) {
-    final titleStyle = AppType.bodyLarge.copyWith(
+    final titleStyle = AppType.body.copyWith(
         fontSize: 20, fontWeight: FontWeight.w800, color: sh.ink);
     if (_editing) {
       return TextField(
@@ -556,7 +554,7 @@ class _ThemeRowState extends ConsumerState<_ThemeRow> {
       // shareCode/shareRole 없음 → 내가 편집할 수 있는 로컬 테마
     );
     ref.read(themesProvider.notifier).add(copy);
-    MascotToast.success(context, trf('"{0}" 내 캘린더로 복제했어요', [copy.name]));
+    AppToast.success(context, trf('"{0}" 내 캘린더로 복제했어요', [copy.name]));
   }
 
   void _pickColor() async {
@@ -574,7 +572,7 @@ class _ThemeRowState extends ConsumerState<_ThemeRow> {
         return AlertDialog(
           backgroundColor: sh.card,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(tr('색상 선택'), style: AppType.titleMedium.copyWith(color: sh.ink)),
+          title: Text(tr('색상 선택'), style: AppType.cardTitle.copyWith(color: sh.ink)),
           content: SizedBox(
             width: 280,
             child: Wrap(

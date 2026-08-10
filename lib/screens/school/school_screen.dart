@@ -103,11 +103,11 @@ class _Header extends StatelessWidget {
               Text(school.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppType.titleMedium.copyWith(
+                  style: AppType.cardTitle.copyWith(
                       color: sh.ink, fontWeight: FontWeight.w800)),
               Text(
                 trf('{0}학년 {1}반', [school.grade, school.classNm]),
-                style: AppType.bodyMedium.copyWith(color: sh.inkSoft),
+                style: AppType.sub.copyWith(color: sh.inkSoft),
               ),
             ],
           ),
@@ -133,7 +133,7 @@ class _TodayPeriods extends ConsumerWidget {
 
     if (classes.isEmpty) {
       return Text(tr('오늘은 수업이 없어요'),
-          style: AppType.bodyLarge.copyWith(color: sh.inkFaint));
+          style: AppType.body.copyWith(color: sh.inkFaint));
     }
 
     return Column(
@@ -169,7 +169,7 @@ class _PeriodRow extends StatelessWidget {
             width: 34,
             child: Text(
               period == null ? '' : trf('{0}교시', [period]),
-              style: AppType.bodySmall.copyWith(
+              style: AppType.caption.copyWith(
                   color: ongoing ? sh.now : sh.inkFaint,
                   fontWeight: FontWeight.w700),
             ),
@@ -180,14 +180,14 @@ class _PeriodRow extends StatelessWidget {
               item.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppType.bodyLarge.copyWith(
+              style: AppType.body.copyWith(
                   color: sh.ink,
                   fontWeight: ongoing ? FontWeight.w800 : FontWeight.w600),
             ),
           ),
           Text(
             '${item.startHhmm}',
-            style: AppType.bodySmall.copyWith(color: sh.inkSoft),
+            style: AppType.caption.copyWith(color: sh.inkSoft),
           ),
         ],
       ),
@@ -205,7 +205,7 @@ class _Meal extends StatelessWidget {
     final menu = text?.trim();
     if (menu == null || menu.isEmpty) {
       return Text(tr('급식 정보가 없어요'),
-          style: AppType.bodyLarge.copyWith(color: sh.inkFaint));
+          style: AppType.body.copyWith(color: sh.inkFaint));
     }
     return Container(
       width: double.infinity,
@@ -216,7 +216,7 @@ class _Meal extends StatelessWidget {
         border: Border.all(color: sh.border),
       ),
       child: Text(menu.replaceAll('\n', ' · '),
-          style: AppType.bodyLarge.copyWith(color: sh.ink)),
+          style: AppType.body.copyWith(color: sh.ink)),
     );
   }
 }
@@ -253,7 +253,7 @@ class _AcademicList extends ConsumerWidget {
 
     if (upcoming.isEmpty) {
       return Text(tr('예정된 학사일정이 없어요'),
-          style: AppType.bodyLarge.copyWith(color: sh.inkFaint));
+          style: AppType.body.copyWith(color: sh.inkFaint));
     }
 
     return Column(
@@ -270,7 +270,7 @@ class _AcademicList extends ConsumerWidget {
                     child: Text(e.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AppType.bodyLarge.copyWith(
+                        style: AppType.body.copyWith(
                             color: sh.ink, fontWeight: FontWeight.w600)),
                   ),
                   const SizedBox(width: Gap.sm),
@@ -309,7 +309,7 @@ class _NotConnected extends StatelessWidget {
             Text(
               tr('학교를 연결하면\n시간표·급식·학사일정을\n자동으로 볼 수 있어요.'),
               textAlign: TextAlign.center,
-              style: AppType.titleMedium.copyWith(color: sh.inkSoft),
+              style: AppType.cardTitle.copyWith(color: sh.inkSoft),
             ),
             const SizedBox(height: Gap.xl),
             FilledButton(

@@ -93,7 +93,7 @@ class DayCell extends StatelessWidget {
           : null,
       child: Text(
         '${date.day}',
-        style: AppType.labelMedium.copyWith(
+        style: AppType.label.copyWith(
           fontSize: 15,
           fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
           color: dayNumColor,

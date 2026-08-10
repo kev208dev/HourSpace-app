@@ -11,11 +11,11 @@ import '../models/event_item.dart';
 import '../models/calendar_theme.dart';
 import '../providers/events_provider.dart';
 import '../providers/themes_provider.dart';
-import '../widgets/mascot/mascot_feedback.dart';
 import '../core/calendar/calendar_item.dart';
 import '../core/calendar/calendar_repository.dart';
 import '../core/calendar/period_times.dart';
 import '../widgets/source_badge.dart';
+import '../widgets/app_toast.dart';
 
 /// 날짜·인덱스가 있으면 편집, 없으면 추가.
 Future<void> showAddEditEventModal(
@@ -154,7 +154,7 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
               children: [
                 Text(
                   isEdit ? tr('일정 편집') : tr('일정 추가'),
-                  style: AppType.titleLarge.copyWith(
+                  style: AppType.title.copyWith(
                       fontSize: 21,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.3,
@@ -190,7 +190,7 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
                   TextField(
                     controller: _textCtrl,
                     autofocus: true,
-                    style: AppType.bodyLarge.copyWith(color: sh.ink),
+                    style: AppType.body.copyWith(color: sh.ink),
                     decoration: InputDecoration(
                       hintText: tr('예: 내일 7시 수학학원'),
                       hintStyle: TextStyle(color: sh.inkFaint),
@@ -225,7 +225,7 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
                 onTap: _pickDate,
                 child: Text(
                   _dateKey,
-                  style: AppType.bodyLarge
+                  style: AppType.body
                       .copyWith(color: sh.accent, fontWeight: FontWeight.w500),
                 ),
               ),
@@ -318,13 +318,13 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
                             size: 16, color: sh.inkSoft),
                         const SizedBox(width: 6),
                         Text(tr('종료일'),
-                            style: AppType.labelMedium.copyWith(color: sh.inkSoft)),
+                            style: AppType.label.copyWith(color: sh.inkSoft)),
                         const SizedBox(width: 8),
                         GestureDetector(
                           onTap: _pickUntilDate,
                           child: Text(
                             _recurUntil ?? tr('무기한'),
-                            style: AppType.bodyLarge.copyWith(
+                            style: AppType.body.copyWith(
                                 color: _recurUntil != null
                                     ? sh.accent
                                     : sh.inkFaint,
@@ -352,7 +352,7 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
             // 캘린더(카테고리) 선택
             if (themes.isNotEmpty) ...[
               Text(tr('캘린더 (여러 개 선택 가능)'),
-                  style: AppType.labelMedium.copyWith(color: sh.inkSoft)),
+                  style: AppType.label.copyWith(color: sh.inkSoft)),
               const SizedBox(height: Gap.sm),
               Wrap(
                 spacing: 8,
@@ -483,7 +483,7 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
   void _save() async {
     var text = _textCtrl.text.trim();
     if (text.isEmpty) {
-      MascotToast.error(context, tr('제목을 입력해주세요'));
+      AppToast.error(context, tr('제목을 입력해주세요'));
       return;
     }
     // 신규 추가 시: 본문에 "내일 5시" 같은 자연어 토큰이 남아 있고 사용자가
@@ -547,7 +547,7 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
     }
 
     if (!mounted) return;
-    MascotToast.success(context, isEdit ? tr('일정을 수정했어요') : tr('일정을 추가했어요'));
+    AppToast.success(context, isEdit ? tr('일정을 수정했어요') : tr('일정을 추가했어요'));
     Navigator.pop(context);
   }
 
@@ -578,13 +578,13 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
         backgroundColor: sh.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(tr('시간 겹침'),
-            style: AppType.titleMedium.copyWith(color: sh.ink)),
+            style: AppType.cardTitle.copyWith(color: sh.ink)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(tr('이 시간 같은 날 일정과 겹쳐요:'),
-                style: AppType.bodyLarge.copyWith(color: sh.inkSoft)),
+                style: AppType.body.copyWith(color: sh.inkSoft)),
             const SizedBox(height: 8),
             ...conflicts.take(4).map((c) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2),
@@ -593,7 +593,7 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
                       Expanded(
                         child: Text(
                           '• ${c.startHhmm}${c.endHhmm != null ? "~${c.endHhmm}" : ""}  ${c.title}',
-                          style: AppType.bodyLarge.copyWith(color: sh.ink),
+                          style: AppType.body.copyWith(color: sh.ink),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -606,7 +606,7 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(trf('외 {0}개', [conflicts.length - 4]),
-                    style: AppType.bodySmall.copyWith(color: sh.inkFaint)),
+                    style: AppType.caption.copyWith(color: sh.inkFaint)),
               ),
           ],
         ),
@@ -645,7 +645,7 @@ class _FieldRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppType.labelMedium.copyWith(color: sh.inkSoft)),
+        Text(label, style: AppType.label.copyWith(color: sh.inkSoft)),
         const SizedBox(height: Gap.xs),
         Container(
           width: double.infinity,
@@ -689,7 +689,7 @@ class _TimeBtn extends StatelessWidget {
         ),
         child: Text(
           value ?? hint,
-          style: AppType.bodyLarge.copyWith(
+          style: AppType.body.copyWith(
               color: value != null ? sh.accentInk : sh.inkFaint,
               fontWeight: value != null ? FontWeight.w600 : FontWeight.w400),
         ),
@@ -729,7 +729,7 @@ class _ThemeChip extends StatelessWidget {
                     color: color, shape: BoxShape.circle)),
             const SizedBox(width: Gap.xs),
             Text(tr(theme.name),
-                style: AppType.bodySmall.copyWith(
+                style: AppType.caption.copyWith(
                     color: selected ? color : color.withValues(alpha: 0.8),
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
           ],
@@ -767,7 +767,7 @@ class _RecurChip extends StatelessWidget {
               color: selected ? sh.accent : Colors.transparent),
         ),
         child: Text(label,
-            style: AppType.labelMedium.copyWith(
+            style: AppType.label.copyWith(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
                 color: selected ? sh.accentInk : sh.inkSoft)),
@@ -816,7 +816,7 @@ class _UnderstoodSummary extends StatelessWidget {
           Flexible(
             child: Text(
               '${tr('이해한 내용')} · ${parts.join('  ')}',
-              style: AppType.bodySmall.copyWith(
+              style: AppType.caption.copyWith(
                   color: sh.accentInk, fontWeight: FontWeight.w700),
               overflow: TextOverflow.ellipsis,
             ),
