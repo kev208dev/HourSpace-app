@@ -3,6 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 import '../models/sports.dart';
+import 'notification_ids.dart';
 
 /// 스포츠 경기 시작 N분 전 로컬 알림 — flutter_local_notifications + timezone.
 /// 생일 알림과 동일 패턴이되, 채널/ID 영역을 분리(겹침 방지).
@@ -11,8 +12,7 @@ class SportsNotifications {
   static final _plugin = FlutterLocalNotificationsPlugin();
   static bool _inited = false;
 
-  // 스포츠 알림 id 영역(생일과 충돌 피하려 상위 비트 사용).
-  static const int _idBase = 0x10000000;
+  static const int _idBase = NotificationIds.sportsBase;
 
   static Future<void> init() async {
     if (_inited) return;
@@ -43,7 +43,21 @@ class SportsNotifications {
       );
 
   static int _notifId(String eventId) =>
-      _idBase | (eventId.hashCode & 0x0FFFFFFF);
+      NotificationIds.forKey(_idBase, eventId);
+
+  /// 스포츠 대역만 취소 — 구독을 끄거나 경기가 사라져도 옛 알림이 남지 않는다.
+  static Future<void> _cancelOwnRange() async {
+    try {
+      final pending = await _plugin.pendingNotificationRequests();
+      for (final p in pending) {
+        if (NotificationIds.isInRange(p.id, _idBase)) {
+          await _plugin.cancel(p.id);
+        }
+      }
+    } catch (e) {
+      debugPrint('[SportsNotif] cancel range error: $e');
+    }
+  }
 
   /// 스포츠 알림 전체 재스케줄. 구독별 reminderMinutes 적용.
   static Future<void> scheduleAll(
@@ -51,8 +65,7 @@ class SportsNotifications {
     Map<String, List<SportsEvent>> eventsById,
   ) async {
     await init();
-    // 스포츠 id 영역만 정리하기 어려우므로 전체 취소 대신 개별 취소 후 재등록.
-    // (간단화: 우리 영역의 알림은 다음 등록으로 덮어씀. 과거분은 OS가 무시.)
+    await _cancelOwnRange();
     final subById = {for (final s in subs) s.id: s};
     final now = tz.TZDateTime.now(tz.local);
     for (final entry in eventsById.entries) {

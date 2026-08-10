@@ -17,6 +17,10 @@ import '../providers/recurring_provider.dart';
 import '../providers/cell_design_provider.dart';
 import '../providers/todos_provider.dart';
 import '../providers/academic_schedule_provider.dart';
+import '../providers/record_templates_provider.dart';
+import '../providers/template_ranges_provider.dart';
+import '../providers/sports_provider.dart';
+import '../providers/user_type_provider.dart';
 import 'events_sync.dart';
 import 'user_data_sync.dart';
 
@@ -67,23 +71,33 @@ class AccountScope {
     }
     if (user == null) _pulledFor = null; // 로그아웃 → 다음 로그인 시 재pull
 
-    if (changed || pulled) _invalidateAll(ref);
+    if (changed || pulled) invalidateAccountProviders(ref.invalidate);
   }
 
-  static void _invalidateAll(Ref ref) {
-    ref.invalidate(eventsProvider);
-    ref.invalidate(themesProvider);
-    ref.invalidate(starredProvider);
-    ref.invalidate(memosProvider);
-    ref.invalidate(circlesProvider);
-    ref.invalidate(filterProvider);
-    ref.invalidate(dayTemplatesProvider);
-    ref.invalidate(widgetValuesProvider);
-    ref.invalidate(birthdaysProvider);
-    ref.invalidate(settingsProvider); // 모토(계정) 재읽기
-    ref.invalidate(recurringProvider); // 반복 일정(계정) 재읽기
-    ref.invalidate(cellDesignProvider); // 셀 디자인(계정) 재읽기
-    ref.invalidate(todosProvider); // 할 일(계정) 재읽기
-    ref.invalidate(academicScheduleProvider); // 학사일정(학교) 재요청
+  /// 계정 스코프 데이터를 읽는 provider 전체를 다시 읽게 한다.
+  ///
+  /// 계정 전환·클라우드 pull·백업 복원 뒤에 공통으로 쓴다. [invalidate] 는
+  /// `ref.invalidate` — `Ref` 와 `WidgetRef` 가 공통 타입을 갖지 않아 함수로 받는다.
+  /// 여기 빠진 provider 가 있으면 그 데이터만 앱을 다시 켤 때까지 옛 값으로 남는다.
+  static void invalidateAccountProviders(
+      void Function(ProviderOrFamily) invalidate) {
+    invalidate(eventsProvider);
+    invalidate(themesProvider);
+    invalidate(starredProvider);
+    invalidate(memosProvider);
+    invalidate(circlesProvider);
+    invalidate(filterProvider);
+    invalidate(dayTemplatesProvider);
+    invalidate(widgetValuesProvider);
+    invalidate(birthdaysProvider);
+    invalidate(settingsProvider); // 모토(계정) 재읽기
+    invalidate(recurringProvider); // 반복 일정(계정) 재읽기
+    invalidate(cellDesignProvider); // 셀 디자인(계정) 재읽기
+    invalidate(todosProvider); // 할 일(계정) 재읽기
+    invalidate(academicScheduleProvider); // 학사일정(학교) 재요청
+    invalidate(recordTemplatesProvider); // 기록 템플릿(계정)
+    invalidate(templateRangesProvider); // 기록 템플릿 적용 기간(계정)
+    invalidate(sportsSubscriptionsProvider); // 스포츠 구독(계정)
+    invalidate(userTypeProvider);
   }
 }

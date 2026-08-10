@@ -11,6 +11,10 @@ import '../models/calendar_theme.dart';
 import '../providers/events_provider.dart';
 import '../providers/themes_provider.dart';
 import '../widgets/mascot/mascot_feedback.dart';
+import '../core/calendar/calendar_item.dart';
+import '../core/calendar/calendar_repository.dart';
+import '../core/calendar/period_times.dart';
+import '../widgets/source_badge.dart';
 
 /// 날짜·인덱스가 있으면 편집, 없으면 추가.
 Future<void> showAddEditEventModal(
@@ -48,6 +52,10 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
   // 자연어 토큰("내일", "오후 3시" 등) 감지 시 입력창 안에서 빨갛게 강조.
   final _TokenHighlightController _textCtrl = _TokenHighlightController();
   late String _dateKey;
+
+  /// 편집 시작 시점의 날짜 — 저장 키이자 [widget.editIndex] 가 가리키는 배열.
+  /// 사용자가 날짜를 바꿔도 원본을 찾으려면 이 값이 필요하다.
+  late String _originalDateKey;
   String? _startTime;
   String? _endTime;
   final Set<String> _selectedThemes = {};
@@ -97,8 +105,9 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
   void initState() {
     super.initState();
     _dateKey = widget.dateKey;
+    _originalDateKey = widget.dateKey;
     if (isEdit) {
-      final item = ref.read(eventsProvider)[_dateKey]?[widget.editIndex!];
+      final item = ref.read(eventsProvider)[_originalDateKey]?[widget.editIndex!];
       if (item != null) {
         _textCtrl.text = item.t;
         _startTime = item.tm;
@@ -524,7 +533,7 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
 
     if (isEdit) {
       final old =
-          ref.read(eventsProvider)[_dateKey]?[widget.editIndex!];
+          ref.read(eventsProvider)[_originalDateKey]?[widget.editIndex!];
       final updated = (old ?? EventItem(t: text)).copyWith(
         t: text,
         tm: _startTime,
@@ -532,7 +541,9 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
         th: thVal,
         rr: rrMap,
       );
-      eventsNotifier.updateEvent(_dateKey, widget.editIndex!, updated);
+      // 날짜가 바뀌었으면 옛 날짜에서 빼고 새 날짜에 넣는 것을 한 번에 처리한다.
+      await eventsNotifier.moveEvent(
+          _originalDateKey, widget.editIndex!, _dateKey, updated);
     } else {
       final item = EventItem(
         id: const Uuid().v4(),
@@ -550,35 +561,26 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
     Navigator.pop(context);
   }
 
-  // 같은 날짜에서 시간이 겹치는 이벤트 목록 반환(자신은 제외).
-  List<EventItem> _findConflicts() {
-    final list = ref.read(eventsProvider)[_dateKey] ?? const <EventItem>[];
-    int? toMin(String? hhmm) {
-      if (hhmm == null || !hhmm.contains(':')) return null;
-      final p = hhmm.split(':');
-      final h = int.tryParse(p[0]);
-      final m = int.tryParse(p[1]);
-      if (h == null || m == null) return null;
-      return h * 60 + m;
-    }
-    final mySt = toMin(_startTime);
-    final myEn = toMin(_endTime);
-    if (mySt == null || myEn == null || myEn <= mySt) return [];
-    final out = <EventItem>[];
-    for (var i = 0; i < list.length; i++) {
-      if (isEdit && i == widget.editIndex) continue;
-      final e = list[i];
-      if (e.isTimetable || !e.hasTime) continue;
-      final s = toMin(e.tm);
-      final n = toMin(e.te) ?? (s == null ? null : s + 60);
-      if (s == null || n == null) continue;
-      // 겹침: [mySt, myEn) ∩ [s, n) 비어있지 않음
-      if (s < myEn && mySt < n) out.add(e);
-    }
-    return out;
+  /// 같은 날짜에서 시간이 겹치는 항목(자신 제외).
+  ///
+  /// 예전에는 내 로컬 일정만 봤다. 이제 통합 계층을 거쳐 학교 시간표·학사일정·
+  /// 공유 캘린더까지 함께 본다(스포츠·생일·공휴일은 정보성이라 제외).
+  List<CalendarItem> _findConflicts() {
+    final startMin = hhmmToMinutes(_startTime);
+    final endMin = hhmmToMinutes(_endTime);
+    if (startMin == null || endMin == null || endMin <= startMin) return const [];
+
+    final candidate = candidateFromEvent(
+      EventItem(t: _textCtrl.text, tm: _startTime, te: _endTime),
+      _dateKey,
+    );
+    final ignoreId = isEdit && _originalDateKey == _dateKey
+        ? 'local:$_dateKey#${widget.editIndex}'
+        : null;
+    return conflictsFor(ref, candidate, ignoreId: ignoreId);
   }
 
-  Future<bool?> _confirmConflict(List<EventItem> conflicts) {
+  Future<bool?> _confirmConflict(List<CalendarItem> conflicts) {
     final sh = context.sh;
     return showDialog<bool>(
       context: context,
@@ -594,11 +596,21 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
             Text(tr('이 시간 같은 날 일정과 겹쳐요:'),
                 style: AppType.bodyLarge.copyWith(color: sh.inkSoft)),
             const SizedBox(height: 8),
-            ...conflicts.take(4).map((e) => Padding(
+            ...conflicts.take(4).map((c) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Text(
-                      '• ${e.tm}${e.te != null ? "~${e.te}" : ""}  ${e.t}',
-                      style: AppType.bodyLarge.copyWith(color: sh.ink)),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '• ${c.startHhmm}${c.endHhmm != null ? "~${c.endHhmm}" : ""}  ${c.title}',
+                          style: AppType.bodyLarge.copyWith(color: sh.ink),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      SourceBadge(source: c.source, color: c.color),
+                    ],
+                  ),
                 )),
             if (conflicts.length > 4)
               Padding(
@@ -625,7 +637,9 @@ class _AddEditEventModalState extends ConsumerState<AddEditEventModal> {
 
   void _delete() {
     if (!isEdit) return;
-    ref.read(eventsProvider.notifier).deleteEvent(_dateKey, widget.editIndex!);
+    ref
+        .read(eventsProvider.notifier)
+        .deleteEvent(_originalDateKey, widget.editIndex!);
     Navigator.pop(context);
   }
 }

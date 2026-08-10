@@ -4,14 +4,14 @@ import 'package:timezone/timezone.dart' as tz;
 import '../core/utils/date_utils.dart' as du;
 import '../models/event_item.dart';
 import 'birthday_notifications.dart' show BirthdayNotifications;
+import 'notification_ids.dart';
 
 /// 일반 일정 로컬 알림.
 /// ID 영역: 0x20000000..0x2FFFFFFF (생일 0x40000000, 스포츠 0x10000000과 분리).
 class EventNotifications {
   EventNotifications._();
   static final _plugin = FlutterLocalNotificationsPlugin();
-  static const int _idBase = 0x20000000;
-  static const int _idMask = 0x0FFFFFFF;
+  static const int _idBase = NotificationIds.eventBase;
 
   static Future<void> _ensureInited() => BirthdayNotifications.init();
 
@@ -78,7 +78,7 @@ class EventNotifications {
     try {
       final pending = await _plugin.pendingNotificationRequests();
       for (final p in pending) {
-        if (p.id >= _idBase && p.id < _idBase + _idMask + 1) {
+        if (NotificationIds.isInRange(p.id, _idBase)) {
           await _plugin.cancel(p.id);
         }
       }
@@ -87,14 +87,8 @@ class EventNotifications {
     }
   }
 
-  static int _idFor(String dateKey, int index, EventItem e) {
-    final key = '${e.id ?? '$dateKey#$index'}|${e.tm}';
-    var h = 0;
-    for (final code in key.codeUnits) {
-      h = (h * 31 + code) & 0x7FFFFFFF;
-    }
-    return _idBase + (h & _idMask);
-  }
+  static int _idFor(String dateKey, int index, EventItem e) =>
+      NotificationIds.forKey(_idBase, '${e.id ?? '$dateKey#$index'}|${e.tm}');
 
   static Future<void> _safeSchedule(
       int id, String title, String body, tz.TZDateTime when) async {

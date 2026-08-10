@@ -12,24 +12,13 @@ import '../utils/ical_export.dart';
 import '../providers/events_provider.dart';
 import '../providers/themes_provider.dart';
 import '../storage/local_store.dart';
+import '../supabase/account_scope.dart';
 import '../supabase/auth_service.dart';
 import '../supabase/user_data_sync.dart';
 import '../supabase/events_sync.dart';
 
-// 백업 대상 키 목록 (backup.js의 BACKUP_KEYS와 동일)
-const _backupKeys = [
-  StorageKeys.events,
-  StorageKeys.themes,
-  StorageKeys.dayTemplates,
-  StorageKeys.dayWidgetValues,
-  StorageKeys.motto,
-  StorageKeys.neisSchool,
-  StorageKeys.themeFilter,
-  StorageKeys.circles,
-  StorageKeys.starred,
-  StorageKeys.continuousView,
-  StorageKeys.weekStart,
-];
+/// 백업 파일 스키마 버전. 향후 형식이 바뀌면 올리고 복원 쪽에서 분기한다.
+const _backupSchemaVersion = 2;
 
 Future<void> showBackupModal(BuildContext context) => showModalBottomSheet(
       context: context,
@@ -116,10 +105,18 @@ class _BackupModalState extends ConsumerState<BackupModal> {
   }
 
   Map<String, dynamic> _collect() {
-    final snap = <String, dynamic>{'_v': 2, '_ts': DateTime.now().toIso8601String()};
-    for (final k in _backupKeys) {
+    // `_v`/`_ts` 는 웹·구버전 앱이 읽는 필드라 그대로 두고,
+    // 읽기 쉬운 이름을 나란히 추가한다(스펙 §23).
+    final now = DateTime.now().toIso8601String();
+    final snap = <String, dynamic>{
+      '_v': _backupSchemaVersion,
+      '_ts': now,
+      'schemaVersion': _backupSchemaVersion,
+      'createdAt': now,
+    };
+    for (final k in StorageKeys.backupKeys) {
       final v = LocalStore.instance.getString(k);
-      if (v != null) { snap[k] = v; }
+      if (v != null) snap[k] = v;
     }
     return snap;
   }
@@ -152,16 +149,23 @@ class _BackupModalState extends ConsumerState<BackupModal> {
       }
       final content = await File(result.files.single.path!).readAsString();
       final snap = jsonDecode(content) as Map<String, dynamic>;
-      if (snap['_v'] != 2) { throw Exception('올바른 백업 파일이 아닙니다 (버전 불일치)'); }
-      for (final k in _backupKeys) {
-        if (snap.containsKey(k)) {
-          await LocalStore.instance.setString(k, snap[k] as String);
+      final version = snap['schemaVersion'] ?? snap['_v'];
+      if (version is! int || version < 2) {
+        throw Exception('올바른 백업 파일이 아닙니다 (버전 불일치)');
+      }
+      var restored = 0;
+      for (final k in StorageKeys.backupKeys) {
+        final v = snap[k];
+        if (v is String) {
+          await LocalStore.instance.setString(k, v);
+          restored++;
         }
       }
-      // providers 재로드
-      ref.invalidate(eventsProvider);
-      ref.invalidate(themesProvider);
-      setState(() => _msg = trf('복원 완료 ({0})', [snap['_ts'] ?? '']));
+      // 복원한 데이터를 화면에 반영 — 예전에는 일정·테마만 새로고침해서
+      // 할 일·생일 등은 앱을 다시 켜야 보였다.
+      AccountScope.invalidateAccountProviders(ref.invalidate);
+      setState(() => _msg = trf('복원 완료 · {0}개 항목 ({1})',
+          [restored, snap['createdAt'] ?? snap['_ts'] ?? '']));
     } catch (e) {
       setState(() => _msg = trf('오류: {0}', [e]));
     } finally {

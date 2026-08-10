@@ -3,6 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 import '../providers/birthdays_provider.dart';
+import 'notification_ids.dart';
 
 /// 생일 로컬 알림 — flutter_local_notifications + timezone.
 /// 매년 반복(DateTimeComponents.dateAndTime): 당일 + N일 전 09:00.
@@ -53,25 +54,52 @@ class BirthdayNotifications {
         iOS: DarwinNotificationDetails(),
       );
 
-  /// 전체 재스케줄. 끄면 모두 취소.
+  /// 전체 재스케줄. 끄면 생일 알림만 취소한다.
   static Future<void> scheduleAll(
     List<Birthday> birthdays, {
     required bool enabled,
     required int daysBefore,
   }) async {
     await init();
-    await _plugin.cancelAll();
+    // 예전에는 여기서 cancelAll() 을 불러 일정·스포츠·브리핑 알림까지 전부
+    // 지웠다. 이제 생일 대역만 취소한다.
+    await _cancelOwnRange();
     if (!enabled) return;
     for (final b in birthdays) {
       if (b.month < 1 || b.month > 12 || b.day < 1 || b.day > 31) continue;
       final dayOf = _nextInstance(b.month, b.day, 9, 0);
       await _schedule(
-          b.notifyId, '🎂 오늘은 ${b.name}님 생일!', '잊지 말고 축하해 주세요.', dayOf);
+          _idFor(NotificationIds.birthdayBase, b),
+          '🎂 오늘은 ${b.name}님 생일!',
+          '잊지 말고 축하해 주세요.',
+          dayOf);
       if (daysBefore > 0) {
         final before = dayOf.subtract(Duration(days: daysBefore));
-        await _schedule(b.notifyId ^ 0x40000000,
-            '🎂 ${b.name}님 생일 D-$daysBefore', '$daysBefore일 후예요.', before);
+        await _schedule(
+            _idFor(NotificationIds.birthdayAheadBase, b),
+            '🎂 ${b.name}님 생일 D-$daysBefore',
+            '$daysBefore일 후예요.',
+            before);
       }
+    }
+  }
+
+  static int _idFor(int base, Birthday b) =>
+      NotificationIds.forKey(base, b.id);
+
+  /// 생일 대역(당일 + D-N)만 취소.
+  static Future<void> _cancelOwnRange() async {
+    try {
+      final pending = await _plugin.pendingNotificationRequests();
+      for (final p in pending) {
+        if (NotificationIds.isInRange(p.id, NotificationIds.birthdayBase) ||
+            NotificationIds.isInRange(
+                p.id, NotificationIds.birthdayAheadBase)) {
+          await _plugin.cancel(p.id);
+        }
+      }
+    } catch (e) {
+      debugPrint('[BirthdayNotif] cancel range error: $e');
     }
   }
 

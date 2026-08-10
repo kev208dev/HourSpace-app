@@ -68,8 +68,11 @@ abstract final class StorageKeys {
   static const backupConfig  = 'calendar-backup-config-v1';
   static const supabaseHashes = 'calendar_supabase_hashes_v1';
 
-  // 자동 로그인용 자격증명 — 전역(계정 스코프 제외, accountKeys에 넣지 말 것).
-  // 비밀번호는 base64로 난독화 저장(앱 전용 SharedPreferences).
+  // [폐기] 예전 버전이 자동 로그인용으로 저장하던 자격증명.
+  // 비밀번호를 base64(= 평문과 다름없음)로 담고 있었다. 더 이상 쓰지 않으며
+  // AuthNotifier.purgeLegacyCredentials() 가 앱 시작 시 삭제한다.
+  // 세션 유지는 supabase_flutter 의 리프레시 토큰이 담당한다.
+  // 절대 백업/동기화 대상에 넣지 말 것.
   static const savedAuthId   = 'calendar-saved-auth-id-v1';
   static const savedAuthPw   = 'calendar-saved-auth-pw-v1';
 
@@ -85,11 +88,33 @@ abstract final class StorageKeys {
   };
 
   /// user_data KV 테이블로 동기화하는 키 (events 는 별도 events 테이블이라 제외).
+  ///
+  /// todos 가 빠져 있어서 할 일은 기기를 바꾸면 사라졌다 — 계정 데이터이므로 포함한다.
   static const Set<String> userDataKeys = {
     themes, memos, starred, circles, themeFilter, cellDesign,
     motto, mottoIcon, dayTemplates, dayWidgetValues, recordTemplateRanges,
     recordTemplates,
     timetableTemplate, timetableOverrides, timetableWeekly, birthdays, neisSchool,
-    sportsSubscriptions,
+    sportsSubscriptions, todos,
+  };
+
+  /// 파일 백업/복원 대상 키.
+  ///
+  /// 사용자가 만든 계정 데이터 전체([accountKeys]) + 되살릴 가치가 있는 기기
+  /// 설정. 예전에는 11개만 담아서 할 일·생일·스포츠 구독·기록 템플릿·직접 입력
+  /// 시간표가 백업에 들어가지 않았는데도 UI 는 "백업 완료"라고 표시했다.
+  ///
+  /// 재요청 가능한 캐시(neisCache, neisAcademic, sportsEventsCache,
+  /// sharedThemeEvents)와 자격증명은 의도적으로 제외한다.
+  static const Set<String> backupKeys = {
+    ...accountKeys,
+    userProfile,
+    continuousView,
+    weekStart,
+    showTimetable,
+    timetableEmptyLabel,
+    monthCellHeightFactor,
+    colorPreset,
+    recordMigratedV1,
   };
 }

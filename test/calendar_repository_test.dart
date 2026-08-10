@@ -10,7 +10,6 @@ import 'package:surlap/core/calendar/period_times.dart';
 import 'package:surlap/core/constants/storage_keys.dart';
 import 'package:surlap/models/event_item.dart';
 import 'package:surlap/providers/birthdays_provider.dart';
-import 'package:surlap/providers/events_provider.dart';
 import 'package:surlap/providers/filter_provider.dart';
 import 'package:surlap/storage/local_store.dart';
 

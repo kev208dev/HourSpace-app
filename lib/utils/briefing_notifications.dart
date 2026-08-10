@@ -2,13 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'birthday_notifications.dart' show BirthdayNotifications;
+import 'notification_ids.dart';
 
 /// 매일 동일 시각 1회 — "오늘의 브리핑" 푸시.
 /// ID 영역: 단일 고정 ID(0x30000000)로 항상 덮어쓰기/취소 가능.
 class BriefingNotifications {
   BriefingNotifications._();
   static final _plugin = FlutterLocalNotificationsPlugin();
-  static const int _id = 0x30000000;
+  static const int _id = NotificationIds.briefingBase;
 
   static Future<void> _ensureInited() => BirthdayNotifications.init();
 

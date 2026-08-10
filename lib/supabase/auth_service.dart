@@ -1,6 +1,5 @@
 // auth.js 대응 — 아이디는 '<id>@cal-id.local' 이메일로 합성.
 // Supabase Dashboard에서 이메일 확인 비활성화 필요.
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -34,7 +33,7 @@ class AuthNotifier extends Notifier<User?> {
       AccountScope.applyAuth(ref, user);
     });
     final current = sb?.auth.currentUser;
-    // Supabase 세션이 복원되지 않았으면 로컬 자격증명으로 자동 로그인 시도.
+    // 세션 복원이 아직 끝나지 않았을 수 있으니 1회 확인한다.
     if (current == null) {
       Future.microtask(ensureAutoLogin);
     }
@@ -49,39 +48,39 @@ class AuthNotifier extends Notifier<User?> {
   /// 세션이 이미 복원돼 있으면 [tryAutoLogin] 이 즉시 반환한다.
   Future<void> ensureAutoLogin() => _autoLoginOnce ??= tryAutoLogin();
 
-  // ── 자동 로그인용 자격증명 (전역 저장, base64 난독화) ──────────
-  Future<void> _saveCredentials(String id, String password) async {
-    final ls = LocalStore.instance;
-    await ls.setString(StorageKeys.savedAuthId, id.toLowerCase().trim());
-    await ls.setString(
-        StorageKeys.savedAuthPw, base64Encode(utf8.encode(password)));
-  }
+  // ── 자동 로그인 ────────────────────────────────────────────────
+  //
+  // 예전에는 비밀번호를 base64 로 인코딩해 SharedPreferences 에 저장하고 앱 시작
+  // 시 그걸로 다시 로그인했다. base64 는 암호화가 아니라 기기에서 평문을 그대로
+  // 복원할 수 있다. supabase_flutter 가 이미 세션(리프레시 토큰)을 영속화하고
+  // 앱 시작 시 복원하므로 비밀번호 보관은 애초에 필요 없다.
+  //
+  // 저장 자체를 없애고, 예전 버전에서 남은 값은 앱 시작 시 1회 지운다.
 
-  Future<void> _clearCredentials() async {
+  /// 예전 버전이 저장해 둔 자격증명 제거(1회성 정리).
+  static Future<void> purgeLegacyCredentials() async {
     final ls = LocalStore.instance;
-    await ls.remove(StorageKeys.savedAuthId);
+    if (ls.getString(StorageKeys.savedAuthPw) == null &&
+        ls.getString(StorageKeys.savedAuthId) == null) {
+      return;
+    }
     await ls.remove(StorageKeys.savedAuthPw);
+    await ls.remove(StorageKeys.savedAuthId);
+    debugPrint('[Auth] 예전 버전이 저장한 로컬 자격증명을 삭제했습니다');
   }
 
-  /// 앱 시작 시: 활성 세션이 없고 로컬에 저장된 로그인 기록이 있으면 재로그인.
+  Future<void> _clearCredentials() => purgeLegacyCredentials();
+
+  /// 앱 시작 시: supabase_flutter 가 세션을 복원할 때까지 기다린다.
+  ///
+  /// 세션 복원은 `Supabase.initialize` 가 비동기로 처리하므로, 이 시점에
+  /// `currentUser` 가 아직 null 일 수 있다. onAuthStateChange 가 뒤이어
+  /// 상태를 채운다.
   Future<void> tryAutoLogin() async {
-    if (state != null) return; // 이미 세션 복원됨
-    final ls = LocalStore.instance;
-    final id = ls.getString(StorageKeys.savedAuthId);
-    final pwEnc = ls.getString(StorageKeys.savedAuthPw);
-    if (id == null || id.isEmpty || pwEnc == null || pwEnc.isEmpty) return;
-    String pw;
-    try {
-      pw = utf8.decode(base64Decode(pwEnc));
-    } catch (_) {
-      return; // 손상된 값 → 무시
-    }
-    try {
-      await signInWithId(id, pw);
-    } catch (e) {
-      // 실패해도 자격증명은 유지(네트워크 일시 오류일 수 있음).
-      debugPrint('[Auth] 자동 로그인 실패: $e');
-    }
+    await purgeLegacyCredentials();
+    if (state != null) return;
+    final restored = sb?.auth.currentSession?.user;
+    if (restored != null) state = restored;
   }
 
   Future<void> signInWithId(String id, String password) async {
@@ -92,7 +91,6 @@ class AuthNotifier extends Notifier<User?> {
       final res = await client.auth.signInWithPassword(
           email: idToEmail(id), password: password);
       state = res.user;
-      await _saveCredentials(id, password); // 자동 로그인용 저장
       // 스코프 전환 + 데이터 pull + invalidate 는 onAuthStateChange→AccountScope 처리
     } catch (e, st) {
       debugPrint('[Auth] signInWithId 실패: ${e.runtimeType} → $e');
@@ -110,7 +108,6 @@ class AuthNotifier extends Notifier<User?> {
           email: idToEmail(id), password: password,
           data: {'id': id});
       state = res.user;
-      await _saveCredentials(id, password); // 자동 로그인용 저장
       // 신규 계정은 빈 데이터로 시작(게스트 데이터는 guest 스코프에 보존).
       // 스코프 전환/invalidate 는 AccountScope 가 처리.
     } catch (e, st) {
