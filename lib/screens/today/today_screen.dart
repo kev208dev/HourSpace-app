@@ -14,23 +14,27 @@ import '../../i18n/strings.dart';
 import '../../models/todo_item.dart';
 import '../../modals/add_edit_event_modal.dart';
 import '../../modals/add_todo_modal.dart';
-import '../../modals/record_entry_sheet.dart';
+import '../../modals/event_detail_sheet.dart';
 import '../../providers/academic_schedule_provider.dart';
+import '../../providers/birthdays_provider.dart';
 import '../../providers/neis_cache_provider.dart';
-import '../../providers/record_templates_provider.dart';
 import '../../providers/todos_provider.dart';
+import '../../providers/user_type_provider.dart';
 import '../../providers/view_provider.dart';
 import '../../supabase/neis_service.dart' show NeisSchool;
 import '../../widgets/bottom_nav_bar.dart';
-import '../../widgets/section_header.dart';
-import '../../widgets/source_badge.dart';
 import '../search_view.dart';
 
-/// 오늘 화면 — "지금 뭘 해야 하지?" 하나에 답한다.
+/// 홈 · 오늘 (핸드오프 B1 · spec §5).
 ///
-/// 정보 우선순위: 지금 → 다음 일정 → 오늘 할 일 → 학교 → 오늘 기록.
-/// 카드를 나열하지 않고 **지금 진행 중인 것**을 히어로로 올린다. 진행 중인
-/// 것이 없으면 다음 일정이 그 자리를 차지한다.
+/// 오늘 하루 요약을 위에서 아래로: 날짜 헤더 → 이번 주 스트립 → 오늘 일정 수와
+/// 가장 가까운 학사일정 → 다가오는 일정 → 할 일 → 오늘 급식 → 다가오는 생일.
+///
+/// 정렬 규칙(핸드오프):
+///  - 시간 일정: 내 일정 + 반복 생성분을 시작 시각순
+///  - 할 일: 미완료 → 완료, 그다음 우선순위, 생성 시각순
+///  - 생일: 다음 생일이 가까운 순 최대 4건
+/// 지난 시각의 일정은 opacity 0.45 로 감쇠한다.
 class TodayScreen extends ConsumerStatefulWidget {
   const TodayScreen({super.key});
 
@@ -44,7 +48,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   @override
   void initState() {
     super.initState();
-    // 남은 시간·진행 상태가 실시간으로 줄어들어야 히어로가 의미를 갖는다.
+    // 지난 일정 감쇠와 "다가오는" 판정이 시간에 따라 바뀐다.
     _tick = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) setState(() {});
     });
@@ -58,91 +62,53 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final sh = context.sh;
     final now = DateTime.now();
     final todayKey = du.toDateKey(now);
-    final dayItems = ref.watch(calendarDayProvider(todayKey));
-
-    final ongoing = dayItems.where((i) => i.isOngoingAt(now)).toList();
-    final upcoming = dayItems
-        .where((i) => !i.allDay && i.startAt.isAfter(now))
-        .toList();
-    final todos = ref.watch(todosProvider).where((t) => t.dateKey == todayKey).toList()
-      ..sort(_byPriority);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(
-          Gap.lg, Gap.sm, Gap.lg, kBottomNavClearance),
+          Gap.lg, Gap.md, Gap.lg, kBottomNavClearance + Gap.xl),
       children: [
-        _Greeting(now: now),
+        _Header(now: now),
+        const SizedBox(height: Gap.md),
+        _WeekStrip(now: now),
         const SizedBox(height: Gap.lg),
-
-        // ── 히어로: 지금 / (없으면) 다음 일정 ──
-        if (ongoing.isNotEmpty)
-          NowCard(item: ongoing.first, now: now)
-        else if (upcoming.isNotEmpty)
-          NowCard(item: upcoming.first, now: now, isNext: true)
-        else
-          const _NothingNowCard(),
-
-        // ── 다음 일정 ──
-        if (upcoming.length > (ongoing.isNotEmpty ? 0 : 1)) ...[
-          const SizedBox(height: Gap.xl),
-          SectionHeader(
-            title: tr('다음 일정'),
-            actionLabel: tr('캘린더'),
-            onAction: () =>
-                ref.read(viewProvider.notifier).setTab(AppTab.calendar),
-          ),
-          for (final item in upcoming.skip(ongoing.isNotEmpty ? 0 : 1).take(4))
-            _UpcomingRow(item: item),
-        ],
-
-        // ── 할 일 ──
-        const SizedBox(height: Gap.xl),
-        SectionHeader(
-          title: tr('할 일'),
-          trailing: todos.isEmpty
-              ? null
-              : '${todos.where((t) => t.done).length}/${todos.length}',
-          actionLabel: tr('전체'),
-          onAction: () => ref.read(viewProvider.notifier).setTab(AppTab.todos),
-        ),
-        if (todos.isEmpty)
-          _QuietLine(
-            text: tr('오늘 할 일이 없어요'),
-            actionLabel: tr('추가'),
-            onAction: () => showAddTodoModal(context),
-          )
-        else
-          for (final t in todos.take(4)) _TodoRow(todo: t),
-
-        // ── 학교 ──
-        const SizedBox(height: Gap.xl),
-        _SchoolSection(dateKey: todayKey),
-
-        // ── 오늘 기록 ──
-        const SizedBox(height: Gap.xl),
-        _RecordSection(dateKey: todayKey),
+        _StatsRow(dateKey: todayKey),
+        _SectionHeading(tr('다가오는 일정')),
+        _Upcoming(dateKey: todayKey, now: now),
+        _SectionHeading(tr('할 일')),
+        _TodoList(dateKey: todayKey),
+        _SectionHeading(tr('오늘 급식')),
+        _Meal(now: now),
+        _SectionHeading(tr('다가오는 생일')),
+        _Birthdays(now: now),
+        SizedBox(height: Gap.lg, child: ColoredBox(color: sh.bg)),
       ],
     );
   }
+}
 
-  static int _byPriority(TodoItem a, TodoItem b) {
-    if (a.done != b.done) return a.done ? 1 : -1;
-    int rank(TodoItem t) => t.hasPriority ? t.priority : 99;
-    final r = rank(a).compareTo(rank(b));
-    if (r != 0) return r;
-    return (a.createdAt ?? '').compareTo(b.createdAt ?? '');
-  }
+/// 섹션 제목 — 17px / 700, 위 space-6 아래 space-2.
+class _SectionHeading extends StatelessWidget {
+  final String text;
+  const _SectionHeading(this.text);
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: Gap.xl, bottom: Gap.sm),
+        child: Text(text,
+            style: AppType.section.copyWith(color: context.sh.ink)),
+      );
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// 헤더
+// 헤더 · 주 스트립
 // ─────────────────────────────────────────────────────────────────────
 
-class _Greeting extends ConsumerWidget {
+class _Header extends ConsumerWidget {
   final DateTime now;
-  const _Greeting({required this.now});
+  const _Header({required this.now});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -155,242 +121,417 @@ class _Greeting extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${i18nd.monthDay(now)} ${i18nd.weekdayShort(now.weekday)}',
-                style: AppType.cardTitle.copyWith(
-                    fontWeight: FontWeight.w800, color: sh.ink),
+                '${now.year}년 ${now.month}월 ${now.day}일 '
+                '${i18nd.weekdayShort(now.weekday)}요일',
+                style: AppType.sub.copyWith(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: sh.ink.withValues(alpha: 0.48),
+                ),
               ),
-              const SizedBox(height: 2),
-              Text(tr(_greetingFor(now.hour)),
-                  style: AppType.body.copyWith(color: sh.inkSoft)),
+              const SizedBox(height: 5),
+              Text(
+                '${now.month}월 ${now.day}일',
+                style: AppType.display.copyWith(
+                  fontSize: 34,
+                  letterSpacing: -1.02,
+                  color: sh.ink,
+                ),
+              ),
             ],
           ),
         ),
-        IconButton(
-          onPressed: () => showSearchSheet(context),
-          icon: Icon(Icons.search_rounded, color: sh.inkSoft),
+        _IconBtn(
+          icon: Icons.search_rounded,
+          onTap: () => showSearchSheet(context),
           tooltip: tr('검색'),
         ),
-        IconButton(
-          onPressed: () => ref.read(viewProvider.notifier).setTab(AppTab.profile),
-          icon: Icon(Icons.settings_rounded, color: sh.inkSoft),
-          tooltip: tr('더보기'),
+        _IconBtn(
+          icon: Icons.bolt_rounded,
+          onTap: () => showAddEditEventModal(context, dateKey: du.todayKey()),
+          tooltip: tr('빠른 추가'),
+        ),
+      ],
+    );
+  }
+}
+
+class _IconBtn extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final String tooltip;
+  const _IconBtn(
+      {required this.icon, required this.onTap, required this.tooltip});
+
+  @override
+  Widget build(BuildContext context) => Tooltip(
+        message: tooltip,
+        child: InkResponse(
+          onTap: onTap,
+          radius: 22,
+          child: Padding(
+            padding: const EdgeInsets.all(6),
+            child: Icon(icon, size: 21, color: context.sh.ink),
+          ),
+        ),
+      );
+}
+
+/// 이번 주 스트립 — 오늘은 라임 원, 항목 있는 날은 accent 점.
+class _WeekStrip extends ConsumerWidget {
+  final DateTime now;
+  const _WeekStrip({required this.now});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sh = context.sh;
+    final byDate = ref.watch(calendarItemsByDateProvider);
+    // 오늘을 기준으로 앞뒤를 채워 이번 주를 만든다(월요일 시작).
+    final back = now.weekday - 1;
+    final start = DateTime(now.year, now.month, now.day - back);
+
+    return Row(
+      children: [
+        for (var i = 0; i < 7; i++)
+          Expanded(
+            child: _WeekDay(
+              date: DateTime(start.year, start.month, start.day + i),
+              today: now,
+              hasItems:
+                  (byDate[du.toDateKey(DateTime(start.year, start.month, start.day + i))] ??
+                          const [])
+                      .isNotEmpty,
+              sh: sh,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _WeekDay extends ConsumerWidget {
+  final DateTime date;
+  final DateTime today;
+  final bool hasItems;
+  final SurlapColors sh;
+
+  const _WeekDay({
+    required this.date,
+    required this.today,
+    required this.hasItems,
+    required this.sh,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isToday = du.isSameDay(date, today);
+    return InkWell(
+      onTap: () =>
+          ref.read(viewProvider.notifier).openThreeDay(du.toDateKey(date)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Column(
+          children: [
+            Text(
+              i18nd.weekdayShort(date.weekday),
+              style: AppType.label.copyWith(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w400,
+                  color: sh.ink.withValues(alpha: 0.48)),
+            ),
+            const SizedBox(height: 5),
+            Container(
+              width: 33,
+              height: 33,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isToday ? sh.now : Colors.transparent,
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                '${date.day}',
+                style: AppType.button.copyWith(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w600,
+                  color: isToday ? sh.onNow : sh.ink,
+                ),
+              ),
+            ),
+            const SizedBox(height: 5),
+            Container(
+              width: 5,
+              height: 5,
+              decoration: BoxDecoration(
+                color: hasItems && !isToday ? sh.accent : Colors.transparent,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 오늘 일정 수 · 가장 가까운 학사일정
+// ─────────────────────────────────────────────────────────────────────
+
+class _StatsRow extends ConsumerWidget {
+  final String dateKey;
+  const _StatsRow({required this.dateKey});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sh = context.sh;
+    final localCount = ref
+        .watch(calendarDayProvider(dateKey))
+        .where((i) => i.source == CalendarSource.local)
+        .length;
+    final acad = ref.watch(nextAcademicHighlightProvider);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(tr('오늘 내 일정'),
+                  style: AppType.label.copyWith(
+                      color: sh.ink.withValues(alpha: 0.45))),
+              const SizedBox(height: 3),
+              RichText(
+                text: TextSpan(
+                  style: AppType.display.copyWith(fontSize: 28, color: sh.ink),
+                  children: [
+                    TextSpan(text: '$localCount'),
+                    TextSpan(
+                        text: tr('건'),
+                        style: AppType.body.copyWith(
+                            fontSize: 14, color: sh.ink)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: Gap.lg),
+        Expanded(
+          flex: 2,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(tr('가장 가까운 학사일정'),
+                  style: AppType.label.copyWith(color: sh.accent)),
+              const SizedBox(height: 3),
+              if (acad == null)
+                Text(tr('예정된 학사일정이 없습니다.'),
+                    style: AppType.sub
+                        .copyWith(color: sh.ink.withValues(alpha: 0.45)))
+              else ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      acad.daysAway == 0 ? tr('D-DAY') : 'D-${acad.daysAway}',
+                      style: AppType.display
+                          .copyWith(fontSize: 28, color: sh.accent),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(acad.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              AppType.body.copyWith(fontSize: 14, color: sh.ink)),
+                    ),
+                  ],
+                ),
+                Text(
+                  _whenLabel(acad.dateKey),
+                  style: AppType.caption
+                      .copyWith(color: sh.ink.withValues(alpha: 0.45)),
+                ),
+              ],
+            ],
+          ),
         ),
       ],
     );
   }
 
-  static String _greetingFor(int hour) {
-    if (hour < 5) return '아직 안 잤네요';
-    if (hour < 11) return '좋은 아침이에요';
-    if (hour < 17) return '오늘도 화이팅';
-    if (hour < 22) return '수고했어요';
-    return '오늘 하루 어땠나요';
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────
-// 히어로
-// ─────────────────────────────────────────────────────────────────────
-
-/// 지금 진행 중(또는 곧 시작할) 항목 히어로 카드.
-///
-/// 라임(`sh.now`)은 여기와 "오늘/현재 시각" 표시에만 쓴다.
-class NowCard extends StatelessWidget {
-  final CalendarItem item;
-  final DateTime now;
-
-  /// 진행 중인 게 없어 "다음 일정"을 히어로로 올린 경우.
-  final bool isNext;
-
-  const NowCard({
-    super.key,
-    required this.item,
-    required this.now,
-    this.isNext = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sh = context.sh;
-    final accentColor = isNext ? sh.accent : sh.now;
-
-    return Container(
-      padding: const EdgeInsets.all(Gap.lg),
-      decoration: BoxDecoration(
-        color: sh.card,
-        borderRadius: BorderRadius.circular(Radii.card),
-        border: Border.all(color: accentColor.withValues(alpha: 0.35)),
-        boxShadow: sh.shadowCard,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration:
-                    BoxDecoration(color: accentColor, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 7),
-              Text(
-                tr(isNext ? '다음' : '지금'),
-                style: AppType.eyebrow.copyWith(color: accentColor),
-              ),
-            ],
-          ),
-          const SizedBox(height: Gap.md),
-          Text(
-            item.title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: AppType.display.copyWith(color: sh.ink),
-          ),
-          const SizedBox(height: Gap.xs),
-          Text(
-            _timeRange,
-            style: AppType.cardTitle
-                .copyWith(color: sh.inkSoft, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: Gap.lg),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _countdown(context),
-                  style: AppType.cardTitle.copyWith(
-                    color: accentColor,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              SourceBadge(source: item.source, color: item.color),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  String get _timeRange {
-    final start = item.startHhmm ?? '';
-    final end = item.endHhmm;
-    return end == null ? start : '$start — $end';
-  }
-
-  String _countdown(BuildContext context) {
-    if (isNext) {
-      final mins = item.startAt.difference(now).inMinutes;
-      if (mins <= 0) return tr('곧 시작');
-      return trf('{0} 후 시작', [_humanize(mins)]);
+  static String _whenLabel(String dateKey) {
+    try {
+      final d = du.fromDateKey(dateKey);
+      return '${d.month}월 ${d.day}일';
+    } catch (_) {
+      return '';
     }
-    final end = item.endAt ?? item.startAt.add(const Duration(minutes: 50));
-    final mins = end.difference(now).inMinutes;
-    if (mins <= 0) return tr('곧 끝나요');
-    return trf('{0} 남음', [_humanize(mins)]);
-  }
-
-  static String _humanize(int minutes) {
-    if (minutes < 60) return trf('{0}분', [minutes]);
-    final h = minutes ~/ 60;
-    final m = minutes % 60;
-    return m == 0 ? trf('{0}시간', [h]) : trf('{0}시간 {1}분', [h, m]);
   }
 }
 
-class _NothingNowCard extends ConsumerWidget {
-  const _NothingNowCard();
+// ─────────────────────────────────────────────────────────────────────
+// 다가오는 일정
+// ─────────────────────────────────────────────────────────────────────
+
+class _Upcoming extends ConsumerWidget {
+  final String dateKey;
+  final DateTime now;
+  const _Upcoming({required this.dateKey, required this.now});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sh = context.sh;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(Gap.lg),
-      decoration: BoxDecoration(
-        color: sh.card,
-        borderRadius: BorderRadius.circular(Radii.card),
-        border: Border.all(color: sh.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(tr('지금'), style: AppType.eyebrow.copyWith(color: sh.inkFaint)),
-          const SizedBox(height: Gap.md),
-          Text(tr('예정된 일정이 없어요'),
-              style: AppType.title.copyWith(color: sh.ink)),
-          const SizedBox(height: Gap.xs),
-          Text(tr('오늘은 여유가 있네요'),
-              style: AppType.body.copyWith(color: sh.inkSoft)),
-          const SizedBox(height: Gap.md),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: () => showAddEditEventModal(context,
-                  dateKey: du.todayKey()),
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: Text(tr('일정 추가')),
-            ),
-          ),
-        ],
-      ),
+    final timed = ref
+        .watch(calendarDayProvider(dateKey))
+        .where((i) => !i.allDay)
+        .toList();
+
+    if (timed.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: Gap.sm),
+        child: Text(tr('오늘 남은 시간 일정이 없습니다.'),
+            style:
+                AppType.body.copyWith(color: sh.ink.withValues(alpha: 0.45))),
+      );
+    }
+
+    return Column(
+      children: [
+        for (final item in timed) _UpcomingRow(item: item, now: now),
+      ],
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────
-// 목록 행
-// ─────────────────────────────────────────────────────────────────────
 
 class _UpcomingRow extends ConsumerWidget {
   final CalendarItem item;
-  const _UpcomingRow({required this.item});
+  final DateTime now;
+  const _UpcomingRow({required this.item, required this.now});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sh = context.sh;
+    final past = item.startAt.isBefore(now);
+    final editable = item.editable && item.localIndex != null;
+
     return InkWell(
-      onTap: item.editable && item.localIndex != null
-          ? () => showAddEditEventModal(context,
-              dateKey: item.dateKey, editIndex: item.localIndex)
-          : null,
-      borderRadius: BorderRadius.circular(Radii.small),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 9),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 52,
-              child: Text(
-                item.startHhmm ?? '',
-                style: AppType.number.copyWith(color: sh.inkSoft),
+      onTap: () {
+        if (editable) {
+          showAddEditEventModal(context,
+              dateKey: item.dateKey, editIndex: item.localIndex);
+        } else {
+          showEventDetailSheet(context, toEventItem(item));
+        }
+      },
+      child: Opacity(
+        // 지난 시각 일정은 감쇠.
+        opacity: past ? Alpha.past : 1,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 3,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: item.color ?? sh.accent,
+                  borderRadius: BorderRadius.circular(3),
+                ),
               ),
-            ),
-            Container(
-              width: 3,
-              height: 18,
-              margin: const EdgeInsets.only(right: Gap.md),
-              decoration: BoxDecoration(
-                color: item.color ?? sh.accent,
-                borderRadius: BorderRadius.circular(2),
+              const SizedBox(width: Gap.sm),
+              SizedBox(
+                width: 78,
+                child: Text(
+                  _timeLabel,
+                  style: AppType.sub.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: sh.ink.withValues(alpha: 0.62)),
+                ),
               ),
-            ),
-            Expanded(
-              child: Text(
-                item.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppType.body
-                    .copyWith(color: sh.ink, fontWeight: FontWeight.w600),
+              Expanded(
+                child: Text(item.title,
+                    style: AppType.button.copyWith(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w400,
+                        height: 1.35,
+                        color: sh.ink)),
               ),
-            ),
-            if (item.source != CalendarSource.local)
-              SourceBadge(source: item.source, color: item.color),
-          ],
+              // 읽기 전용 출처는 자물쇠로 표시한다.
+              if (!item.editable) ...[
+                const SizedBox(width: 6),
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Icon(Icons.lock_outline_rounded,
+                      size: 13, color: sh.ink.withValues(alpha: 0.40)),
+                ),
+              ],
+              if (item.source != CalendarSource.local) ...[
+                const SizedBox(width: 6),
+                Padding(
+                  padding: const EdgeInsets.only(top: 3),
+                  child: Text(tr(item.source.badgeLabel),
+                      style: AppType.micro.copyWith(
+                          fontWeight: FontWeight.w400,
+                          color: sh.ink.withValues(alpha: 0.42))),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  String get _timeLabel {
+    final start = item.startHhmm ?? '';
+    final end = item.endHhmm;
+    return end == null ? start : '$start–$end';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 할 일
+// ─────────────────────────────────────────────────────────────────────
+
+class _TodoList extends ConsumerWidget {
+  final String dateKey;
+  const _TodoList({required this.dateKey});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sh = context.sh;
+    // 오늘 + 날짜 없는 할 일.
+    final todos = ref
+        .watch(todosProvider)
+        .where((t) => t.dateKey == dateKey || t.dateKey == null)
+        .toList()
+      ..sort(_order);
+
+    if (todos.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: Gap.sm),
+        child: Text(tr('할 일이 없습니다.'),
+            style:
+                AppType.body.copyWith(color: sh.ink.withValues(alpha: 0.45))),
+      );
+    }
+
+    return Column(
+      children: [for (final t in todos) _TodoRow(todo: t)],
+    );
+  }
+
+  /// 미완료 → 완료, 그다음 우선순위, 생성 시각순.
+  static int _order(TodoItem a, TodoItem b) {
+    if (a.done != b.done) return a.done ? 1 : -1;
+    int rank(TodoItem t) => t.hasPriority ? t.priority : 99;
+    final r = rank(a).compareTo(rank(b));
+    if (r != 0) return r;
+    return (a.createdAt ?? '').compareTo(b.createdAt ?? '');
   }
 }
 
@@ -402,212 +543,228 @@ class _TodoRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sh = context.sh;
     return InkWell(
-      onTap: () => showAddTodoModal(context, edit: todo),
-      borderRadius: BorderRadius.circular(Radii.small),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          children: [
-            IconButton(
-              onPressed: () =>
-                  ref.read(todosProvider.notifier).toggleDone(todo.id),
-              iconSize: 22,
-              constraints: const BoxConstraints(
-                  minWidth: kMinTouch, minHeight: kMinTouch),
-              padding: EdgeInsets.zero,
-              tooltip: tr(todo.done ? '완료 취소' : '완료'),
-              icon: Icon(
-                todo.done
-                    ? Icons.check_circle_rounded
-                    : Icons.circle_outlined,
-                color: todo.done ? sh.now : sh.inkFaint,
-              ),
-            ),
-            const SizedBox(width: Gap.sm),
-            Expanded(
-              child: Text(
-                todo.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppType.body.copyWith(
-                  color: todo.done ? sh.inkFaint : sh.ink,
-                  decoration: todo.done ? TextDecoration.lineThrough : null,
-                  decorationColor: sh.inkFaint,
-                ),
-              ),
-            ),
-            if (todo.hasPriority)
-              Text(
-                'P${todo.priority}',
-                style: AppType.label.copyWith(
-                  color: todoPriorityColor(todo.priority, sh),
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// 비어 있을 때의 한 줄 안내 — 큰 빈 상태 일러스트 대신 조용하게.
-class _QuietLine extends StatelessWidget {
-  final String text;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-
-  const _QuietLine({required this.text, this.actionLabel, this.onAction});
-
-  @override
-  Widget build(BuildContext context) {
-    final sh = context.sh;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: Gap.sm),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(text,
-                style: AppType.body.copyWith(color: sh.inkFaint)),
-          ),
-          if (actionLabel != null)
-            TextButton(onPressed: onAction, child: Text(actionLabel!)),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────
-// 학교 · 기록
-// ─────────────────────────────────────────────────────────────────────
-
-class _SchoolSection extends ConsumerWidget {
-  final String dateKey;
-  const _SchoolSection({required this.dateKey});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final school = NeisSchool.load();
-    if (school == null) {
-      return _ConnectSchoolPrompt(
-        onConnect: () => ref.read(viewProvider.notifier).setTab(AppTab.profile),
-      );
-    }
-
-    final sh = context.sh;
-    final neis = ref.watch(neisCacheProvider);
-    final di = du.fromDateKey(dateKey).weekday - 1;
-    final meal = neis.lunch[di];
-    final highlight = ref.watch(nextAcademicHighlightProvider);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SectionHeader(
-          title: tr('학교'),
-          actionLabel: tr('자세히'),
-          onAction: () => ref.read(viewProvider.notifier).setTab(AppTab.profile),
-        ),
-        if (meal != null && meal.trim().isNotEmpty) ...[
-          Text(tr('오늘 급식'),
-              style: AppType.caption.copyWith(color: sh.inkFaint)),
-          const SizedBox(height: 2),
-          Text(
-            meal.replaceAll('\n', ' · '),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: AppType.body.copyWith(color: sh.ink),
-          ),
-        ] else
-          Text(tr('오늘 급식 정보가 없어요'),
-              style: AppType.body.copyWith(color: sh.inkFaint)),
-        if (highlight != null) ...[
-          const SizedBox(height: Gap.md),
-          Row(
+      onTap: () => ref.read(todosProvider.notifier).toggleDone(todo.id),
+      onLongPress: () => showAddTodoModal(context, edit: todo),
+      child: Opacity(
+        opacity: todo.done ? 0.5 : 1,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          child: Row(
             children: [
+              Icon(todoStatusIcon(todo.status),
+                  size: 19,
+                  color: todoStatusColor(todo.status, todo.priority, sh)),
+              const SizedBox(width: 10),
               Expanded(
-                child: Text(highlight.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppType.body.copyWith(
-                        color: sh.ink, fontWeight: FontWeight.w600)),
+                child: Text(
+                  todo.title,
+                  style: AppType.button.copyWith(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w400,
+                    color: sh.ink,
+                    decoration:
+                        todo.done ? TextDecoration.lineThrough : null,
+                    decorationColor: sh.ink.withValues(alpha: 0.45),
+                  ),
+                ),
               ),
-              Text(
-                highlight.daysAway == 0
-                    ? tr('D-DAY')
-                    : 'D-${highlight.daysAway}',
-                style: AppType.number.copyWith(
-                  color: highlight.daysAway == 0 ? sh.now : sh.accent,
-                  fontWeight: FontWeight.w800,
+              if (todo.hasPriority) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: todoPriorityColor(todo.priority, sh)
+                        .withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(Radii.pill),
+                  ),
+                  child: Text('P${todo.priority}',
+                      style: AppType.micro.copyWith(
+                          color: todoPriorityColor(todo.priority, sh))),
+                ),
+              ],
+              SizedBox(
+                width: 48,
+                child: Text(
+                  _dateLabel,
+                  textAlign: TextAlign.right,
+                  style: AppType.label.copyWith(
+                      fontWeight: FontWeight.w400,
+                      color: sh.ink.withValues(alpha: 0.42)),
                 ),
               ),
             ],
           ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  String get _dateLabel {
+    final key = todo.dateKey;
+    if (key == null) return tr('날짜 없음');
+    try {
+      final d = du.fromDateKey(key);
+      return '${d.month}/${d.day}';
+    } catch (_) {
+      return '';
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 오늘 급식 — 미설정 / 불러오는 중 / 정상 / 실패
+// ─────────────────────────────────────────────────────────────────────
+
+class _Meal extends ConsumerWidget {
+  final DateTime now;
+  const _Meal({required this.now});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sh = context.sh;
+    final school = NeisSchool.load();
+    final usesMeal = ref.watch(userTypeProvider)?.usesMeal ?? false;
+
+    if (school == null || !usesMeal) {
+      return Text(
+        tr('학교가 설정되지 않았습니다. 초·중·고 사용자만 급식 정보를 볼 수 있습니다.'),
+        style: AppType.body.copyWith(color: sh.ink.withValues(alpha: 0.50)),
+      );
+    }
+
+    final neis = ref.watch(neisCacheProvider);
+    final menu = neis.lunch[now.weekday - 1]?.trim();
+
+    if (menu == null || menu.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(Gap.md),
+        decoration: BoxDecoration(
+          color: sh.accent2Bg,
+          borderRadius: BorderRadius.circular(Radii.md),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 1),
+              child: Icon(Icons.cloud_off_rounded,
+                  size: 17, color: sh.accent2Ink),
+            ),
+            const SizedBox(width: Gap.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(tr('급식 정보를 가져오지 못했습니다. 저장된 급식이 없어 표시할 내용이 없습니다.'),
+                      style: AppType.body.copyWith(
+                          height: 1.5, color: sh.accent2Ink)),
+                  const SizedBox(height: 6),
+                  InkWell(
+                    onTap: () =>
+                        ref.read(neisCacheProvider.notifier).refresh(),
+                    child: Text(tr('다시 시도'),
+                        style: AppType.sub.copyWith(
+                          color: sh.accent2Ink,
+                          decoration: TextDecoration.underline,
+                          decorationColor: sh.accent2Ink,
+                        )),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final items = menu
+        .split(RegExp(r'[\n·,]'))
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        for (final m in items)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            decoration: BoxDecoration(
+              color: sh.card2,
+              borderRadius: BorderRadius.circular(Radii.pill),
+            ),
+            child: Text(m, style: AppType.body.copyWith(color: sh.ink)),
+          ),
       ],
     );
   }
 }
 
-class _ConnectSchoolPrompt extends StatelessWidget {
-  final VoidCallback onConnect;
-  const _ConnectSchoolPrompt({required this.onConnect});
+// ─────────────────────────────────────────────────────────────────────
+// 다가오는 생일 — 가까운 순 최대 4건
+// ─────────────────────────────────────────────────────────────────────
 
-  @override
-  Widget build(BuildContext context) {
-    final sh = context.sh;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(Gap.lg),
-      decoration: BoxDecoration(
-        color: sh.card2,
-        borderRadius: BorderRadius.circular(Radii.card),
-        border: Border.all(color: sh.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(tr('학교를 연결하면\n시간표·급식·학사일정을 자동으로 볼 수 있어요.'),
-              style: AppType.body.copyWith(color: sh.inkSoft)),
-          const SizedBox(height: Gap.md),
-          FilledButton(onPressed: onConnect, child: Text(tr('학교 연결'))),
-        ],
-      ),
-    );
-  }
-}
-
-class _RecordSection extends ConsumerWidget {
-  final String dateKey;
-  const _RecordSection({required this.dateKey});
+class _Birthdays extends ConsumerWidget {
+  final DateTime now;
+  const _Birthdays({required this.now});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sh = context.sh;
-    final templates = ref.watch(activeRecordTemplatesProvider(dateKey));
+    final list = ref.watch(birthdaysProvider).toList()
+      ..sort((a, b) => a.daysUntilNext(now).compareTo(b.daysUntilNext(now)));
+    final upcoming = list.take(4).toList();
+
+    if (upcoming.isEmpty) {
+      return Text(tr('등록된 생일이 없습니다.'),
+          style: AppType.body.copyWith(color: sh.ink.withValues(alpha: 0.45)));
+    }
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionHeader(title: tr('오늘 기록')),
-        if (templates.isEmpty)
-          _QuietLine(text: tr('기록할 항목이 없어요'))
-        else
-          Wrap(
-            spacing: Gap.sm,
-            runSpacing: Gap.sm,
-            children: [
-              for (final tpl in templates)
-                ActionChip(
-                  avatar: Text(tpl.emoji),
-                  label: Text(trf('{0} 기록하기', [tpl.name])),
-                  onPressed: () =>
-                      showRecordEntrySheet(context, tpl.id, dateKey),
-                  backgroundColor: sh.card2,
-                  side: BorderSide(color: sh.border),
+        for (final b in upcoming)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 7),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Expanded(
+                  child: Text(b.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppType.button.copyWith(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w400,
+                          color: sh.ink)),
                 ),
-            ],
+                if (b.year != null) ...[
+                  Text('${now.year - b.year!}세',
+                      style: AppType.caption
+                          .copyWith(color: sh.ink.withValues(alpha: 0.42))),
+                  const SizedBox(width: 10),
+                ],
+                SizedBox(
+                  width: 64,
+                  child: Text('${b.month}월 ${b.day}일',
+                      style: AppType.sub
+                          .copyWith(color: sh.ink.withValues(alpha: 0.55))),
+                ),
+                SizedBox(
+                  width: 44,
+                  child: Text(
+                    b.daysUntilNext(now) == 0
+                        ? tr('오늘')
+                        : 'D-${b.daysUntilNext(now)}',
+                    textAlign: TextAlign.right,
+                    style: AppType.sub.copyWith(
+                        fontWeight: FontWeight.w600, color: sh.accent),
+                  ),
+                ),
+              ],
+            ),
           ),
       ],
     );
