@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/calendar/calendar_item.dart';
+import '../core/calendar/global_search.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/design_tokens.dart';
 import '../core/utils/date_utils.dart' as du;
-import '../i18n/strings.dart';
-import '../models/event_item.dart';
-import '../models/todo_item.dart';
-import '../providers/events_provider.dart';
-import '../providers/todos_provider.dart';
-import '../providers/view_provider.dart';
 import '../core/utils/todo_style.dart';
+import '../i18n/strings.dart';
+import '../providers/view_provider.dart';
 import '../widgets/mascot/mascot.dart';
+import '../widgets/source_badge.dart';
 
-/// 일정 + 할 일 통합 검색 시트. 결과 탭 → 해당 날짜 일간 뷰로 이동.
+/// 전역 검색 시트 — 캘린더에 보이는 모든 소스 + 할 일.
+/// 결과를 탭하면 해당 날짜의 일간 뷰로 이동한다.
 Future<void> showSearchSheet(BuildContext context) => showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -20,46 +20,6 @@ Future<void> showSearchSheet(BuildContext context) => showModalBottomSheet(
       backgroundColor: Colors.transparent,
       builder: (_) => const _SearchSheet(),
     );
-
-class SearchHit {
-  final String dateKey;
-  final String title;
-  final bool isTodo;
-  final int priority;
-  const SearchHit({
-    required this.dateKey,
-    required this.title,
-    required this.isTodo,
-    this.priority = 0,
-  });
-}
-
-/// 일정+할 일 통합 검색 — 헤더 인라인 검색·검색 시트 공용.
-List<SearchHit> searchHits(WidgetRef ref, String query) {
-  final q = query.trim().toLowerCase();
-  if (q.isEmpty) return const [];
-  final hits = <SearchHit>[];
-  ref.read(eventsProvider).forEach((dateKey, list) {
-    for (final EventItem e in list) {
-      if (e.isTimetable) continue;
-      if (e.t.toLowerCase().contains(q)) {
-        hits.add(SearchHit(dateKey: dateKey, title: e.t, isTodo: false));
-      }
-    }
-  });
-  for (final TodoItem t in ref.read(todosProvider)) {
-    if (t.title.toLowerCase().contains(q)) {
-      hits.add(SearchHit(
-        dateKey: t.dateKey ?? '',
-        title: t.title,
-        isTodo: true,
-        priority: t.priority,
-      ));
-    }
-  }
-  hits.sort((a, b) => b.dateKey.compareTo(a.dateKey));
-  return hits;
-}
 
 class _SearchSheet extends ConsumerStatefulWidget {
   const _SearchSheet();
@@ -71,6 +31,7 @@ class _SearchSheet extends ConsumerStatefulWidget {
 class _SearchSheetState extends ConsumerState<_SearchSheet> {
   final _ctrl = TextEditingController();
   String _query = '';
+  bool _includeHidden = false;
 
   @override
   void dispose() {
@@ -78,12 +39,19 @@ class _SearchSheetState extends ConsumerState<_SearchSheet> {
     super.dispose();
   }
 
-  List<SearchHit> _search() => searchHits(ref, _query);
+  void _openHit(SearchHit hit) {
+    if (hit.dateKey.isNotEmpty) {
+      ref.read(viewProvider.notifier).setDayView(hit.dateKey);
+    }
+    Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
     final sh = context.sh;
-    final hits = _search();
+    final hits = ref.watch(
+        globalSearchProvider(SearchQuery(_query, includeHidden: _includeHidden)));
+    final rows = _buildRows(hits);
 
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
@@ -108,53 +76,30 @@ class _SearchSheetState extends ConsumerState<_SearchSheet> {
                   ),
                 ),
               ),
-              // 검색 입력
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: Gap.md),
-                decoration: BoxDecoration(
-                  color: sh.card2,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: sh.ink.withValues(alpha: 0.06)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.search_rounded, size: 20, color: sh.inkSoft),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: _ctrl,
-                        autofocus: true,
-                        style: AppType.bodyLarge.copyWith(color: sh.ink),
-                        decoration: InputDecoration(
-                          hintText: tr('일정·할 일 검색'),
-                          hintStyle: TextStyle(color: sh.inkFaint),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding:
-                              const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        onChanged: (v) => setState(() => _query = v),
-                      ),
-                    ),
-                    if (_query.isNotEmpty)
-                      GestureDetector(
-                        onTap: () => setState(() {
-                          _ctrl.clear();
-                          _query = '';
-                        }),
-                        child: Icon(Icons.close_rounded,
-                            size: 18, color: sh.inkFaint),
-                      ),
-                  ],
-                ),
+              _SearchField(
+                controller: _ctrl,
+                query: _query,
+                onChanged: (v) => setState(() => _query = v),
+                onClear: () => setState(() {
+                  _ctrl.clear();
+                  _query = '';
+                }),
               ),
+              if (_query.trim().isNotEmpty)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: _HiddenToggle(
+                    value: _includeHidden,
+                    onChanged: (v) => setState(() => _includeHidden = v),
+                  ),
+                ),
               const SizedBox(height: Gap.sm),
               Expanded(
                 child: _query.trim().isEmpty
                     ? MascotEmptyState(
                         expression: MascotExpression.neutral,
                         title: tr('무엇을 찾고 있나요?'),
-                        message: tr('일정과 할 일을 검색해요'),
+                        message: tr('일정·할 일·학교 일정을 모두 찾아요'),
                         mascotSize: 110,
                         showStars: false,
                       )
@@ -167,16 +112,19 @@ class _SearchSheetState extends ConsumerState<_SearchSheet> {
                           )
                         : ListView.builder(
                             padding: const EdgeInsets.only(bottom: 24),
-                            itemCount: hits.length,
-                            itemBuilder: (_, i) =>
-                                SearchHitTile(hit: hits[i], sh: sh, onTap: () {
-                              if (hits[i].dateKey.isNotEmpty) {
-                                ref
-                                    .read(viewProvider.notifier)
-                                    .setDayView(hits[i].dateKey);
+                            itemCount: rows.length,
+                            itemBuilder: (_, i) {
+                              final row = rows[i];
+                              if (row.header != null) {
+                                return _GroupHeader(
+                                    label: tr(row.header!.label), sh: sh);
                               }
-                              Navigator.pop(context);
-                            }),
+                              return SearchHitTile(
+                                hit: row.hit!,
+                                sh: sh,
+                                onTap: () => _openHit(row.hit!),
+                              );
+                            },
                           ),
               ),
             ],
@@ -185,6 +133,119 @@ class _SearchSheetState extends ConsumerState<_SearchSheet> {
       ),
     );
   }
+
+  /// 그룹 헤더를 끼워 넣은 평면 리스트.
+  List<_Row> _buildRows(List<SearchHit> hits) {
+    final rows = <_Row>[];
+    SearchGroup? current;
+    for (final h in hits) {
+      if (h.group != current) {
+        current = h.group;
+        rows.add(_Row.header(current));
+      }
+      rows.add(_Row.hit(h));
+    }
+    return rows;
+  }
+}
+
+class _Row {
+  final SearchGroup? header;
+  final SearchHit? hit;
+  const _Row.header(this.header) : hit = null;
+  const _Row.hit(this.hit) : header = null;
+}
+
+class _SearchField extends StatelessWidget {
+  final TextEditingController controller;
+  final String query;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  const _SearchField({
+    required this.controller,
+    required this.query,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sh = context.sh;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: Gap.md),
+      decoration: BoxDecoration(
+        color: sh.card2,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: sh.ink.withValues(alpha: 0.06)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.search_rounded, size: 20, color: sh.inkSoft),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              autofocus: true,
+              style: AppType.bodyLarge.copyWith(color: sh.ink),
+              decoration: InputDecoration(
+                hintText: tr('일정·할 일·학교 검색'),
+                hintStyle: TextStyle(color: sh.inkFaint),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              onChanged: onChanged,
+            ),
+          ),
+          if (query.isNotEmpty)
+            GestureDetector(
+              onTap: onClear,
+              child: Icon(Icons.close_rounded, size: 18, color: sh.inkFaint),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HiddenToggle extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  const _HiddenToggle({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final sh = context.sh;
+    return TextButton.icon(
+      onPressed: () => onChanged(!value),
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        minimumSize: const Size(0, kMinTouch),
+        foregroundColor: value ? sh.accent : sh.inkSoft,
+      ),
+      icon: Icon(
+        value ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+        size: 18,
+      ),
+      label: Text(tr('숨긴 캘린더 포함'), style: AppType.bodySmall),
+    );
+  }
+}
+
+class _GroupHeader extends StatelessWidget {
+  final String label;
+  final SurlapColors sh;
+  const _GroupHeader({required this.label, required this.sh});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(4, Gap.lg, 4, Gap.xs),
+        child: Text(
+          label,
+          style: AppType.eyebrow.copyWith(color: sh.inkFaint),
+        ),
+      );
 }
 
 class SearchHitTile extends StatelessWidget {
@@ -196,30 +257,46 @@ class SearchHitTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateLabel = hit.dateKey.isEmpty
-        ? tr('날짜 없음')
-        : () {
-            final d = du.fromDateKey(hit.dateKey);
-            return '${d.year}.${d.month}.${d.day}';
-          }();
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+      minVerticalPadding: 10,
       leading: Icon(
-        hit.isTodo ? Icons.check_circle_outline_rounded : Icons.event_rounded,
+        _icon,
         size: 20,
-        color: hit.isTodo
-            ? todoPriorityColor(hit.priority, sh)
-            : sh.accent,
+        color: hit.isTodo ? todoPriorityColor(hit.priority, sh) : _tint,
       ),
       title: Text(hit.title,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: AppType.bodyLarge.copyWith(color: sh.ink)),
-      subtitle: Text(
-        '${hit.isTodo ? tr('할 일') : tr('일정')} · $dateLabel',
-        style: AppType.bodySmall.copyWith(color: sh.inkSoft),
-      ),
+      subtitle: Text(_subtitle, style: AppType.bodySmall.copyWith(color: sh.inkSoft)),
+      trailing: hit.isTodo
+          ? const TodoBadge()
+          : SourceBadge(source: hit.source!, color: hit.item?.color),
       onTap: onTap,
     );
+  }
+
+  Color get _tint => hit.item?.color ?? sh.accent;
+
+  IconData get _icon {
+    if (hit.isTodo) return Icons.check_circle_outline_rounded;
+    return switch (hit.source!) {
+      CalendarSource.schoolTimetable => Icons.schedule_rounded,
+      CalendarSource.schoolAcademic => Icons.school_rounded,
+      CalendarSource.shared => Icons.group_rounded,
+      CalendarSource.sports => Icons.sports_soccer_rounded,
+      CalendarSource.birthday => Icons.cake_rounded,
+      CalendarSource.holiday => Icons.flag_rounded,
+      CalendarSource.local => Icons.event_rounded,
+    };
+  }
+
+  String get _subtitle {
+    if (hit.dateKey.isEmpty) return tr('날짜 없음');
+    final d = du.fromDateKey(hit.dateKey);
+    final date = '${d.year}.${d.month}.${d.day}';
+    final time = hit.item?.startHhmm;
+    return time == null ? date : '$date · $time';
   }
 }

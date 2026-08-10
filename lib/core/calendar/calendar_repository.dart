@@ -294,15 +294,29 @@ List<CalendarItem> _timetableItemsForDate(
       day.isBefore(DateTime(
           thisMonday.year, thisMonday.month, thisMonday.day + 7));
 
+  final maxPeriod = maxPeriodOf(neis.timetable);
+
+  // 교시 → 과목. NEIS 캐시는 교시로 키가 잡혀 있다.
   final subjects = <int, String>{};
+  // 수업 시간대가 아닌 칸에 직접 적어 넣은 항목(등교 전·방과 후) — 행 키가 곧 시각.
+  final freeSlots = <int, String>{};
+
   if (inCachedWeek) {
     (neis.timetable[di] ?? const <int, String>{}).forEach((period, name) {
       if (name.trim().isNotEmpty) subjects[period] = name.trim();
     });
   }
   // 직접 입력한 주간 시간표가 NEIS보다 우선(사용자가 명시적으로 고친 값).
-  (weekly[di] ?? const <int, String>{}).forEach((period, name) {
-    if (name.trim().isNotEmpty) subjects[period] = name.trim();
+  // 이 맵은 교시가 아니라 격자 행 키로 저장돼 있으므로 변환이 필요하다.
+  (weekly[di] ?? const <int, String>{}).forEach((rowHour, name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
+    final period = periodForRowHour(rowHour, maxPeriod);
+    if (period == null) {
+      freeSlots[rowHour] = trimmed;
+    } else {
+      subjects[period] = trimmed;
+    }
   });
 
   final dateKey = du.toDateKey(day);
@@ -319,6 +333,18 @@ List<CalendarItem> _timetableItemsForDate(
       calendarId: timetableCalendarId,
       color: color,
       metadata: {'period': period},
+    ));
+  });
+  freeSlots.forEach((hour, name) {
+    out.add(CalendarItem(
+      id: 'timetable:$dateKey@$hour',
+      title: name,
+      startAt: base.add(Duration(hours: hour)),
+      endAt: base.add(Duration(hours: hour + 1)),
+      source: CalendarSource.schoolTimetable,
+      calendarId: timetableCalendarId,
+      color: color,
+      metadata: {'freeSlotHour': hour},
     ));
   });
   out.sort(compareCalendarItems);

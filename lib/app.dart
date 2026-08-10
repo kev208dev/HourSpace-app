@@ -17,6 +17,10 @@ import 'providers/todos_provider.dart';
 import 'providers/birthdays_provider.dart';
 import 'providers/filter_provider.dart';
 import 'providers/recurring_provider.dart';
+import 'providers/neis_cache_provider.dart';
+import 'providers/academic_schedule_provider.dart';
+import 'providers/shared_theme_events_provider.dart';
+import 'providers/sports_provider.dart';
 import 'screens/splash/splash_gate.dart';
 import 'supabase/theme_share_service.dart';
 
@@ -48,6 +52,12 @@ class _SurlapAppState extends ConsumerState<SurlapApp>
     ref.listenManual(birthdaysProvider, (_, _) => _syncWidget());
     ref.listenManual(filterProvider, (_, _) => _syncWidget());
     ref.listenManual(recurringProvider, (_, _) => _syncWidget());
+    // 위젯이 통합 계층을 쓰게 되면서 학교·공유·스포츠 데이터도 위젯에 뜬다.
+    // 그 소스들이 갱신될 때도 위젯을 다시 그려야 앱과 어긋나지 않는다.
+    ref.listenManual(neisCacheProvider, (_, _) => _syncWidget());
+    ref.listenManual(academicScheduleProvider, (_, _) => _syncWidget());
+    ref.listenManual(sharedThemeEventsProvider, (_, _) => _syncWidget());
+    ref.listenManual(sportsEventsProvider, (_, _) => _syncWidget());
     // 첫 프레임 후 홈 위젯 초기 동기화
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncWidget());
     // 1분마다 위젯 갱신 — 진행 교시·남은시간이 실시간 반영되도록.

@@ -5,7 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/theme/design_tokens.dart';
 import '../../providers/view_provider.dart';
 import '../../core/utils/date_utils.dart' as du;
-import '../../providers/events_provider.dart';
+import '../../core/calendar/calendar_repository.dart';
 
 // 연간 미니 월 카드 라운드(홈·캘린더 톤과 통일).
 const double _yRadius = 18;
@@ -16,7 +16,9 @@ class YearView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final view = ref.watch(viewProvider);
-    final events = ref.watch(eventsProvider);
+    // 통합 계층 — 학사일정·생일·공휴일·공유·스포츠까지 점으로 표시되고,
+    // 숨긴 캘린더는 여기서 이미 빠져 있다(기존엔 로컬 일정만, 필터도 무시).
+    final events = ref.watch(calendarItemsByDateProvider);
     final sh = context.sh;
     final year = view.viewYear;
 

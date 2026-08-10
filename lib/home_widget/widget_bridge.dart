@@ -1,20 +1,13 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:home_widget/home_widget.dart';
+import '../core/calendar/calendar_item.dart';
+import '../core/calendar/calendar_repository.dart';
+import '../core/calendar/period_times.dart';
 import '../core/utils/date_utils.dart' as du;
 import '../i18n/strings.dart' as i18n;
 import '../i18n/dates.dart' as i18nd;
-import '../models/calendar_theme.dart';
-import '../models/event_item.dart';
 import '../models/todo_item.dart';
-import '../providers/academic_schedule_provider.dart';
-import '../providers/birthdays_provider.dart';
-import '../providers/events_provider.dart';
-import '../providers/filter_provider.dart';
-import '../providers/recurring_provider.dart';
-import '../providers/shared_theme_events_provider.dart';
-import '../providers/sports_provider.dart';
-import '../providers/themes_provider.dart';
 import '../providers/todos_provider.dart';
 import '../providers/user_type_provider.dart';
 
@@ -29,12 +22,6 @@ class WidgetBridge {
   static const _maxAllDay = 6;
   static const _maxTimed = 8;
   static const _maxTodos = 6;
-
-  // 시간표 교시 → 시작 시각(시간 정수) 매핑. timetable_view.dart 와 동일 규칙:
-  //   1~4교시: 9, 10, 11, 12시 (8 + period)
-  //   5~8교시: 14, 15, 16, 17시 (9 + period, 점심 13시 갭)
-  static int _periodStartHour(int p) => p <= 4 ? 8 + p : 9 + p;
-  static const _periodEndMinute = 50; // 교시 마치는 분(쉬는 시간 10분 가정)
 
   // 위젯 교시 세그먼트 주얼톤 (없을 때 폴백 — iOS/Android 양쪽 동일 팔레트).
   static const _jewelPalette = <String>[
@@ -92,44 +79,21 @@ class WidgetBridge {
     final today = du.todayKey();
     final nowHM = _hm(now.hour, now.minute);
 
-    final themes = ref.read(themesProvider);
-    final filter = ref.read(filterProvider);
-    final recurring = ref.read(recurringProvider);
+    // 앱 화면과 완전히 같은 통합 계층을 쓴다. 예전에는 위젯이 소스를 따로
+    // 병합하고 교시 시각도 자체 규칙(1교시 09:00)을 써서, 같은 수업이 앱에선
+    // 08:40, 위젯에선 09:00 으로 보이는 불일치가 있었다.
+    final dayItems = ref.read(calendarDayProvider(today));
 
-    final stored = ref.read(eventsProvider)[today] ?? const <EventItem>[];
-    final shared =
-        ref.read(sharedThemeEventsByDateProvider)[today] ?? const <EventItem>[];
-    final sports =
-        ref.read(sportsEventsByDateProvider)[today] ?? const <EventItem>[];
-    final births = ref.read(birthdaysProvider).where(
-        (b) => b.month == now.month && b.day == now.day);
-    final academic = ref.read(academicScheduleProvider)[today] ?? const [];
-
-    bool sharedVisible(EventItem e) =>
-        e.themeIds.isNotEmpty && !filter.contains(e.themeIds.first);
-    bool sportVisible(EventItem e) =>
-        e.themeIds.isEmpty || !filter.contains(e.themeIds.first);
-
-    final allDay = <EventItem>[
-      ...stored.where((e) => !e.hasTime && !e.isTimetable),
-      ...shared.where((e) => !e.hasTime && sharedVisible(e)),
-      if (!filter.contains(birthdayThemeId))
-        ...births.map((b) =>
-            EventItem(t: b.name, th: birthdayThemeId, birthday: true)),
-      if (!filter.contains(academicThemeId))
-        ...academic.map((n) =>
-            EventItem(t: n, th: academicThemeId, academic: true)),
-    ];
-
-    final timed = <EventItem>[
-      ...stored.where((e) => e.hasTime && !e.isTimetable),
-      ...sports.where(sportVisible),
-      ...shared.where((e) => e.hasTime && sharedVisible(e)),
-    ]..sort((a, b) => (a.tm ?? '').compareTo(b.tm ?? ''));
+    final allDay =
+        dayItems.where((i) => i.allDay).toList(growable: false);
+    final timed = dayItems
+        .where((i) =>
+            !i.allDay && i.source != CalendarSource.schoolTimetable)
+        .toList(growable: false);
 
     int nextIndex = -1;
     for (var i = 0; i < timed.length; i++) {
-      if ((timed[i].tm ?? '').compareTo(nowHM) >= 0) {
+      if ((timed[i].startHhmm ?? '').compareTo(nowHM) >= 0) {
         nextIndex = i;
         break;
       }
@@ -142,10 +106,9 @@ class WidgetBridge {
       ..sort(_byPriority);
 
     // ── 오늘 교시 추출(Now/Next 카드) ─────────────────────────────
-    // recurring: weekday(0=월..6=일) → hour → 과목명. 오늘 요일의 교시 1..7
-    // 을 모아 시작/종료 시각 계산.
-    final dowIdx = (now.weekday - 1).clamp(0, 6);
-    final todayCol = recurring[dowIdx] ?? const <int, String>{};
+    final classes = dayItems
+        .where((i) => i.source == CalendarSource.schoolTimetable)
+        .toList(growable: false);
     final periods = <Map<String, dynamic>>[];
     int currentPeriod = -1;
     int minutesRemaining = 0;
@@ -153,39 +116,34 @@ class WidgetBridge {
     String nowName = '', nowStart = '', nowEnd = '';
     String nextName = '', nextStart = '';
 
-    for (var p = 1; p <= 7; p++) {
-      final h = _periodStartHour(p);
-      final name = todayCol[h];
-      if (name == null || name.trim().isEmpty) continue;
-      final start = DateTime(now.year, now.month, now.day, h, 0);
-      final end = DateTime(now.year, now.month, now.day, h, _periodEndMinute);
-      final color = _jewelPalette[(p - 1) % _jewelPalette.length];
+    for (var idx = 0; idx < classes.length; idx++) {
+      final c = classes[idx];
+      final start = c.startAt;
+      final end = c.endAt ?? start.add(const Duration(minutes: kPeriodMinutes));
       periods.add({
-        'name': name,
-        'start': _hm(h, 0),
-        'end': _hm(h, _periodEndMinute),
-        'color': color,
+        'name': c.title,
+        'start': c.startHhmm ?? '',
+        'end': c.endHhmm ?? '',
+        'color': _jewelPalette[idx % _jewelPalette.length],
       });
-      if (now.isAfter(start) && now.isBefore(end) && currentPeriod < 0) {
+      if (c.isOngoingAt(now) && currentPeriod < 0) {
         currentPeriod = periods.length - 1;
-        nowName = name;
-        nowStart = _hm(h, 0);
-        nowEnd = _hm(h, _periodEndMinute);
+        nowName = c.title;
+        nowStart = c.startHhmm ?? '';
+        nowEnd = c.endHhmm ?? '';
         minutesRemaining = end.difference(now).inMinutes;
         final totalSec = end.difference(start).inSeconds;
         progress = totalSec == 0
             ? 0
             : (now.difference(start).inSeconds / totalSec).clamp(0.0, 1.0);
-      } else if (currentPeriod >= 0 && nextName.isEmpty) {
-        nextName = name;
-        nextStart = _hm(h, 0);
-      } else if (currentPeriod < 0 && now.isBefore(start) && nextName.isEmpty) {
-        nextName = name;
-        nextStart = _hm(h, 0);
+      } else if (nextName.isEmpty &&
+          (currentPeriod >= 0 || now.isBefore(start))) {
+        nextName = c.title;
+        nextStart = c.startHhmm ?? '';
       }
     }
-    // 만약 진행 중 교시가 없으면 nowName 은 비워두되, 가장 가까운 미래 = next.
-    // 추가로 next 가 비어 있으면 마지막 교시도 끝났다는 뜻 → 비워둠.
+    // 진행 중 교시가 없으면 nowName 은 비워두되, 가장 가까운 미래 = next.
+    // next 도 비어 있으면 마지막 교시까지 끝났다는 뜻.
 
     final userType = ref.read(userTypeProvider);
     final classLabel =
@@ -204,21 +162,21 @@ class WidgetBridge {
       'eventCount': allDay.length + timed.length,
       'allDay': allDay
           .take(_maxAllDay)
-          .map((e) => {
-                'title': e.t,
-                'color': _color(e, themes),
-                'emoji': _emoji(e),
+          .map((i) => {
+                'title': i.title,
+                'color': _color(i),
+                'emoji': _emoji(i),
               })
           .toList(),
       'timed': timed
           .take(_maxTimed)
-          .map((e) => {
-                'title': e.t,
-                'time': e.tm ?? '',
-                'end': e.te ?? '',
-                'color': _color(e, themes),
-                'emoji': _emoji(e),
-                'sport': e.sport,
+          .map((i) => {
+                'title': i.title,
+                'time': i.startHhmm ?? '',
+                'end': i.endHhmm ?? '',
+                'color': _color(i),
+                'emoji': _emoji(i),
+                'sport': i.source == CalendarSource.sports,
               })
           .toList(),
       'todos': todos
@@ -240,28 +198,19 @@ class WidgetBridge {
     };
   }
 
-  static String _color(EventItem e, List<CalendarTheme> themes) {
-    if (e.birthday) return '#F05995';
-    if (e.academic) return '#5DCAA5';
-    if (e.sport) return _hex(e.sportColor ?? 0xFF6C63FF);
-    final ids = e.themeIds;
-    if (ids.isNotEmpty) {
-      for (final t in themes) {
-        if (t.id == ids.first) {
-          final c = t.color.replaceAll('#', '');
-          return '#$c';
-        }
-      }
-    }
-    return '#8B7FF5';
-  }
+  /// 색은 통합 계층이 이미 해석해 둔 값을 쓴다(테마 색·스포츠 구독 색 포함).
+  static String _color(CalendarItem i) =>
+      i.color == null ? '#8B7FF5' : _hex(i.color!.toARGB32());
 
-  static String _emoji(EventItem e) {
-    if (e.sport) return e.sportEmoji ?? '🏆';
-    if (e.birthday) return '🎂';
-    if (e.academic) return '📚';
-    return '';
-  }
+  static String _emoji(CalendarItem i) => switch (i.source) {
+        CalendarSource.sports =>
+          (i.metadata['emoji'] as String?) ?? '🏆',
+        CalendarSource.birthday => '🎂',
+        CalendarSource.schoolAcademic => '📚',
+        CalendarSource.schoolTimetable => '🏫',
+        CalendarSource.holiday => '🎌',
+        _ => '',
+      };
 
   static String _hex(int argb) =>
       '#${(argb & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';

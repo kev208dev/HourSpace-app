@@ -27,6 +27,38 @@ MinuteRange periodTime(int period) {
 /// 점심시간.
 MinuteRange lunchTime() => (12 * 60 + 30, 13 * 60 + 30);
 
+/// 시간표 격자의 기본 마지막 교시. NEIS 데이터에 더 큰 교시가 있으면 늘어난다.
+const int kDefaultMaxPeriod = 7;
+
+/// NEIS 시간표 맵(`di → period → 과목`)에서 마지막 교시를 구한다.
+int maxPeriodOf(Map<int, Map<int, String>> neisTimetable) {
+  var mp = kDefaultMaxPeriod;
+  for (final periodMap in neisTimetable.values) {
+    for (final p in periodMap.keys) {
+      if (p > mp) mp = p;
+    }
+  }
+  return mp;
+}
+
+/// 교시 → 시간표 격자의 행 키.
+///
+/// `timetableWeekly`(직접 입력한 주간 시간표)는 **교시가 아니라 이 행 키**로
+/// 저장된다. 1~4교시는 9~12, 점심을 건너뛰고 5교시부터는 14시부터다.
+/// 이 값은 실제 수업 시각이 아니라 격자의 슬롯 번호일 뿐이므로,
+/// 실제 시각이 필요하면 [periodTime]을 쓴다.
+int rowHourForPeriod(int period) => period <= 4 ? 8 + period : 9 + period;
+
+/// 행 키 → 교시. 수업 슬롯이 아니면(등교 전·방과 후 자유 시간대) null.
+int? periodForRowHour(int rowHour, int maxPeriod) {
+  final topPeriods = maxPeriod < 4 ? maxPeriod : 4;
+  if (rowHour >= 9 && rowHour <= 8 + topPeriods) return rowHour - 8;
+  if (maxPeriod >= 5 && rowHour >= 14 && rowHour <= 9 + maxPeriod) {
+    return rowHour - 9;
+  }
+  return null;
+}
+
 /// 분 → 'HH:MM'.
 String minutesToHhmm(int minutes) {
   final h = (minutes ~/ 60).toString().padLeft(2, '0');
