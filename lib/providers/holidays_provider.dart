@@ -1,8 +1,23 @@
 import '../core/constants/korean_holidays.dart';
+import '../models/calendar_theme.dart';
 import '../models/event_item.dart';
 
 /// 공휴일 이벤트는 기본 테마 'holidays'(빨강)에 붙인다 — 색·필터칩이 자동 적용.
 const holidayThemeId = 'holidays';
+const holidayCalendarTheme = CalendarTheme(
+  id: holidayThemeId,
+  name: '공휴일',
+  color: '#d33333',
+);
+
+bool isSystemCalendarTheme(String id) => id == holidayThemeId;
+
+List<CalendarTheme> userCalendarThemes(Iterable<CalendarTheme> themes) =>
+    themes.where((theme) => !isSystemCalendarTheme(theme.id)).toList();
+
+/// Restores the fixed system calendar and drops any editable legacy copy.
+List<CalendarTheme> withSystemCalendarThemes(Iterable<CalendarTheme> themes) =>
+    [holidayCalendarTheme, ...userCalendarThemes(themes)];
 
 /// 그 날 공휴일 이름들(중복 제거용).
 Set<String> holidayNamesForDate(DateTime d) {

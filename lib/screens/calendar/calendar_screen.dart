@@ -11,6 +11,7 @@ import '../../i18n/strings.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/view_provider.dart';
 import '../../modals/add_edit_event_modal.dart';
+import '../../widgets/app_empty_state.dart';
 import '../../widgets/arrow_pinch.dart';
 import '../../widgets/bottom_nav_bar.dart';
 import '../../widgets/source_badge.dart';
@@ -110,9 +111,12 @@ class DayAgenda extends ConsumerWidget {
         ),
         Expanded(
           child: items.isEmpty
-              ? Center(
-                  child: Text(tr('일정이 없어요'),
-                      style: AppType.bodyLarge.copyWith(color: sh.inkFaint)),
+              ? AppEmptyState(
+                  icon: Icons.event_available_rounded,
+                  title: tr('일정이 없어요'),
+                  actionText: tr('일정 추가'),
+                  onAction: () =>
+                      showAddEditEventModal(context, dateKey: dateKey),
                 )
               : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(

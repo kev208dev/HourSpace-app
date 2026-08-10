@@ -12,6 +12,7 @@ import '../../i18n/strings.dart';
 import '../../models/todo_item.dart';
 import '../../modals/add_todo_modal.dart';
 import '../../providers/todos_provider.dart';
+import '../../widgets/app_empty_state.dart';
 import '../../widgets/bottom_nav_bar.dart';
 import '../../widgets/section_header.dart';
 
@@ -151,14 +152,12 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
     return out;
   }
 
-  Widget _empty(String text) => Builder(
-        builder: (context) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: Gap.xl),
-          child: Center(
-            child: Text(text,
-                style:
-                    AppType.bodyLarge.copyWith(color: context.sh.inkFaint)),
-          ),
+  Widget _empty(String text) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: Gap.lg),
+        child: AppEmptyState(
+          icon: Icons.checklist_rounded,
+          title: text,
+          message: tr('위 입력창에 말하듯 적으면 바로 추가돼요'),
         ),
       );
 
