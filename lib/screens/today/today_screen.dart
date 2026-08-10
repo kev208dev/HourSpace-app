@@ -105,7 +105,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               ? null
               : '${todos.where((t) => t.done).length}/${todos.length}',
           actionLabel: tr('전체'),
-          onAction: () => ref.read(viewProvider.notifier).setTab(AppTab.todo),
+          onAction: () => ref.read(viewProvider.notifier).setTab(AppTab.todos),
         ),
         if (todos.isEmpty)
           _QuietLine(
@@ -171,7 +171,7 @@ class _Greeting extends ConsumerWidget {
           tooltip: tr('검색'),
         ),
         IconButton(
-          onPressed: () => ref.read(viewProvider.notifier).setTab(AppTab.more),
+          onPressed: () => ref.read(viewProvider.notifier).setTab(AppTab.profile),
           icon: Icon(Icons.settings_rounded, color: sh.inkSoft),
           tooltip: tr('더보기'),
         ),
@@ -491,7 +491,7 @@ class _SchoolSection extends ConsumerWidget {
     final school = NeisSchool.load();
     if (school == null) {
       return _ConnectSchoolPrompt(
-        onConnect: () => ref.read(viewProvider.notifier).setTab(AppTab.school),
+        onConnect: () => ref.read(viewProvider.notifier).setTab(AppTab.profile),
       );
     }
 
@@ -507,7 +507,7 @@ class _SchoolSection extends ConsumerWidget {
         SectionHeader(
           title: tr('학교'),
           actionLabel: tr('자세히'),
-          onAction: () => ref.read(viewProvider.notifier).setTab(AppTab.school),
+          onAction: () => ref.read(viewProvider.notifier).setTab(AppTab.profile),
         ),
         if (meal != null && meal.trim().isNotEmpty) ...[
           Text(tr('오늘 급식'),

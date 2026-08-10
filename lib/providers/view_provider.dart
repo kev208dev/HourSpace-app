@@ -2,26 +2,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/utils/date_utils.dart' as du;
 
-/// 하단 내비게이션의 5개 탭.
+/// 하단 내비게이션의 5개 탭 — 디자인 핸드오프의 NAV 정의 그대로.
 ///
-/// 각 탭은 질문 하나에 답한다:
-///   오늘   — 지금 뭘 해야 하지?
-///   캘린더 — 언제 뭐가 있지?
-///   학교   — 오늘 학교에서 뭐 하지?
-///   할 일  — 내가 아직 뭘 안 했지?
-///   더보기 — 나머지 전부
-enum AppTab { today, calendar, school, todo, more }
+///   home    홈       ph-house
+///   cal     캘린더    ph-calendar-blank  → 월 보기
+///   todos   할 일     ph-check-square
+///   shared  공유      ph-share-network
+///   profile 내 정보   ph-user-circle
+///
+/// 학교(NEIS)는 전용 탭이 아니라 프로필 하위 진입점이다.
+enum AppTab { home, calendar, todos, shared, profile }
 
 /// 캘린더 탭 안의 보기 방식. 별도 화면이 아니라 같은 화면의 모드다.
 enum CalendarViewMode { month, threeDay, day }
 
 extension AppTabX on AppTab {
   String get label => switch (this) {
-        AppTab.today => '오늘',
+        AppTab.home => '홈',
         AppTab.calendar => '캘린더',
-        AppTab.school => '학교',
-        AppTab.todo => '할 일',
-        AppTab.more => '더보기',
+        AppTab.todos => '할 일',
+        AppTab.shared => '공유',
+        AppTab.profile => '내 정보',
       };
 }
 
@@ -48,7 +49,7 @@ class ViewState {
   final AppTab? prevTab;
 
   const ViewState({
-    this.tab = AppTab.today,
+    this.tab = AppTab.home,
     this.calendarMode = CalendarViewMode.month,
     required this.viewYear,
     required this.viewMonth,

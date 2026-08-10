@@ -5,7 +5,7 @@ import 'package:surlap/core/utils/date_utils.dart' as du;
 import 'package:surlap/providers/view_provider.dart';
 import 'package:surlap/storage/local_store.dart';
 
-/// 정보구조 계약 — 5탭 + 캘린더 보기 방식(스펙 §4, §7, §8).
+/// 정보구조 계약 — 디자인 핸드오프의 하단 탭 정의와 캘린더 보기 방식.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -15,26 +15,27 @@ void main() {
     return ProviderContainer();
   }
 
-  test('하단 내비는 오늘/캘린더/학교/할 일/더보기 5개, 순서 고정', () {
+  test('하단 탭은 홈/캘린더/할 일/공유/내 정보 5개, 순서 고정', () {
     expect(AppTab.values, [
-      AppTab.today,
+      AppTab.home,
       AppTab.calendar,
-      AppTab.school,
-      AppTab.todo,
-      AppTab.more,
+      AppTab.todos,
+      AppTab.shared,
+      AppTab.profile,
     ]);
-    expect(AppTab.values.map((t) => t.label), ['오늘', '캘린더', '학교', '할 일', '더보기']);
+    expect(AppTab.values.map((t) => t.label),
+        ['홈', '캘린더', '할 일', '공유', '내 정보']);
   });
 
   test('캘린더 보기 방식은 월/3일/하루 세 가지', () {
     expect(CalendarViewMode.values.map((m) => m.label), ['월', '3일', '하루']);
   });
 
-  test('처음 열면 오늘 탭, 선택 날짜는 오늘', () async {
+  test('처음 열면 홈 탭, 선택 날짜는 오늘', () async {
     final c = await boot();
     addTearDown(c.dispose);
     final v = c.read(viewProvider);
-    expect(v.tab, AppTab.today);
+    expect(v.tab, AppTab.home);
     expect(v.selectedDay, du.todayKey());
     expect(v.calendarMode, CalendarViewMode.month);
   });
@@ -46,7 +47,7 @@ void main() {
 
     n.setCalendarMode(CalendarViewMode.day);
     n.selectDay('2026-08-20');
-    n.setTab(AppTab.school);
+    n.setTab(AppTab.todos);
     n.setTab(AppTab.calendar);
 
     final v = c.read(viewProvider);
