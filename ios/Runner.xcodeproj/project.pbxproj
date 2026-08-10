@@ -11,7 +11,6 @@
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		17E7FBBAD172B2BFD3E86127 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 57117F69E34190A5760C05EC /* PrivacyInfo.xcprivacy */; };
 		237A9C02817E81C76A89E915 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7852873AC9B53E5E6797070D /* Foundation.framework */; };
-		306C9CEBBF26951C267E337F /* mascot.png in Resources */ = {isa = PBXBuildFile; fileRef = 87E182E0387A731BE7DBBC8C /* mascot.png */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		43C68D8A351CCDFB24FFDB01 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0057E47017954F64A9FCA23B /* SwiftUI.framework */; };
@@ -85,7 +84,6 @@
 		7852873AC9B53E5E6797070D /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
-		87E182E0387A731BE7DBBC8C /* mascot.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; name = mascot.png; path = SurlapWidget/mascot.png; sourceTree = "<group>"; };
 		8A58C208C473A93C5949A181 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		8BE1F14CA872B37D5B34A085 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		96BA5A0F51DE11001EC5EECE /* SurlapWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SurlapWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -238,7 +236,6 @@
 				E225BEF7957394F9B8149048 /* SurlapWidget.swift */,
 				FFFF7F1456DBDF59079039DB /* Info.plist */,
 				F77C8B8E87ADF4FFC32A62B7 /* SurlapWidget.entitlements */,
-				87E182E0387A731BE7DBBC8C /* mascot.png */,
 			);
 			name = SurlapWidget;
 			sourceTree = SOURCE_ROOT;
@@ -357,7 +354,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				306C9CEBBF26951C267E337F /* mascot.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -720,7 +716,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = AppIcon;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -777,7 +773,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = AppIcon;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";

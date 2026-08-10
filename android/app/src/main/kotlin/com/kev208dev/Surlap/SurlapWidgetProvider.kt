@@ -3,8 +3,7 @@ package com.kev208dev.Surlap
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.SharedPreferences
-import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
+import android.os.Bundle
 import android.view.View
 import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
@@ -12,147 +11,363 @@ import es.antonborri.home_widget.HomeWidgetProvider
 import org.json.JSONArray
 import org.json.JSONObject
 
-// Surlap "지금 / 다음" 위젯. home_widget(Flutter) 가 적은 SharedPreferences 키를 읽음.
-//   nowName, nowStart, nowEnd, nextName, nextStart, minutesRemaining, currentIndex, periods(JSON)
-// receiver(클래스) 이름 변경 시 홈화면에 배치된 기존 위젯은 사라짐(재배치 필요). 미출시 상태라 안전.
+/** Artifact v2.1 responsive home widget: 2x2 D-Day and 4x2 daily agenda. */
 class SurlapWidgetProvider : HomeWidgetProvider() {
 
     private companion object {
-        const val SEG_COUNT = 7
-        // 미래 교시 기본 주얼톤 (과목 색이 없을 때 폴백).
-        val JEWEL = intArrayOf(
-            0xFF3A3A78.toInt(), 0xFF2F4E7A.toInt(), 0xFF1F5A5A.toInt(),
-            0xFF243A6E.toInt(), 0xFF3E2E72.toInt(), 0xFF5A2E62.toInt(),
-            0xFF5A2E4E.toInt()
-        )
-        const val ACCENT = 0xFFA98BFF.toInt()
-        const val IDLE_BG = 0xFF2F2A4A.toInt()
+        const val MEDIUM_MIN_WIDTH_DP = 220
+        const val HOME_WIDGET_PREFERENCES = "HomeWidgetPreferences"
+
+        val LIGHT_TEXT = 0xFF14131A.toInt()
+        val LIGHT_SOFT = 0xFF6E6B7A.toInt()
+        val LIGHT_ACCENT = 0xFF5A2DF4.toInt()
+        val DARK_TEXT = 0xFFF2F2F6.toInt()
+        val DARK_SOFT = 0xFFADADBC.toInt()
+        val DARK_ACCENT = 0xFF8B6CFF.toInt()
     }
+
+    private data class DDay(
+        val title: String,
+        val countdown: String,
+        val dateLabel: String,
+    )
+
+    private data class AgendaEvent(
+        val title: String,
+        val time: String,
+        val color: Int?,
+    )
+
+    private data class NextClass(
+        val title: String,
+        val time: String,
+    )
+
+    private data class WidgetPayload(
+        val dark: Boolean,
+        val dateLabel: String,
+        val dDay: DDay?,
+        val events: List<AgendaEvent>,
+        val nextClass: NextClass?,
+    )
 
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
-        widgetData: SharedPreferences
+        widgetData: SharedPreferences,
     ) {
-        for (id in appWidgetIds) {
-            val views = RemoteViews(context.packageName, R.layout.surlap_widget)
-
-            // 위젯 탭 → 앱 열기 (시간표 view 로 이동하면 좋음 — 일단 메인).
-            val pi = HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
-            views.setOnClickPendingIntent(R.id.widget_root, pi)
-
-            val nowName = widgetData.getString("nowName", "") ?: ""
-            val nowStart = widgetData.getString("nowStart", "") ?: ""
-            val nowEnd = widgetData.getString("nowEnd", "") ?: ""
-            val nextName = widgetData.getString("nextName", "") ?: ""
-            val nextStart = widgetData.getString("nextStart", "") ?: ""
-            val minutesRemaining = widgetData.getInt("minutesRemaining", 0)
-            val currentIndex = widgetData.getInt("currentIndex", -1)
-            val periodsJson = widgetData.getString("periods", "[]") ?: "[]"
-
-            views.setTextViewText(
-                R.id.widget_now_name,
-                if (nowName.isBlank()) "수업 없음" else nowName
-            )
-            val nowTime = if (nowStart.isBlank()) "—" else
-                if (nowEnd.isBlank()) nowStart else "$nowStart – $nowEnd"
-            views.setTextViewText(R.id.widget_now_time, nowTime)
-            views.setTextViewText(
-                R.id.widget_next_name,
-                if (nextName.isBlank()) "—" else nextName
-            )
-            views.setTextViewText(R.id.widget_next_time, if (nextStart.isBlank()) "—" else nextStart)
-
-            val remainingText = when {
-                currentIndex < 0 -> if (nextName.isNotBlank()) "다음 수업 $nextStart" else "오늘 예정된 수업이 없어요"
-                else -> "종료까지 ${minutesRemaining}분 남음"
-            }
-            views.setTextViewText(R.id.widget_remaining, remainingText)
-
-            // 교시 세그먼트 바 — 최대 7칸. 보이는 개수만 표시, 나머지 GONE.
-            val periods = parsePeriods(periodsJson)
-            applyPeriodBar(views, periods, currentIndex)
-
-            appWidgetManager.updateAppWidget(id, views)
+        appWidgetIds.forEach { id ->
+            render(context, appWidgetManager, id, widgetData)
         }
     }
 
-    private fun parsePeriods(raw: String): List<Pair<String, Int>> {
-        return try {
-            val arr = JSONArray(raw)
-            val out = ArrayList<Pair<String, Int>>(arr.length())
-            for (i in 0 until arr.length()) {
-                val o = arr.optJSONObject(i) ?: continue
-                val name = o.optString("name", "")
-                val colorHex = o.optString("color", "")
-                val color = parseHex(colorHex) ?: JEWEL[i % JEWEL.size]
-                out.add(name to color)
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: Bundle,
+    ) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        val widgetData = context.getSharedPreferences(HOME_WIDGET_PREFERENCES, Context.MODE_PRIVATE)
+        render(context, appWidgetManager, appWidgetId, widgetData)
+    }
+
+    private fun render(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        widgetData: SharedPreferences,
+    ) {
+        val views = RemoteViews(context.packageName, R.layout.surlap_widget)
+        val launchIntent = HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
+        views.setOnClickPendingIntent(R.id.widget_root, launchIntent)
+
+        val payload = parsePayload(widgetData)
+        val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
+        val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
+        val maxWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, minWidth)
+        val isMedium = maxOf(minWidth, maxWidth) >= MEDIUM_MIN_WIDTH_DP
+
+        applyTheme(views, payload.dark)
+        views.setViewVisibility(R.id.widget_small, if (isMedium) View.GONE else View.VISIBLE)
+        views.setViewVisibility(R.id.widget_medium, if (isMedium) View.VISIBLE else View.GONE)
+
+        if (isMedium) {
+            bindMedium(views, payload)
+        } else {
+            bindSmall(views, payload)
+        }
+
+        val description = if (isMedium) {
+            "오늘 일정 ${payload.events.size}개${payload.nextClass?.let { ", 다음 수업 ${it.title}" } ?: ""}"
+        } else {
+            payload.dDay?.let { "${it.title}, ${it.countdown}" } ?: "다가오는 학사 일정 없음"
+        }
+        views.setCharSequence(R.id.widget_root, "setContentDescription", description)
+        appWidgetManager.updateAppWidget(appWidgetId, views)
+    }
+
+    private fun applyTheme(views: RemoteViews, dark: Boolean) {
+        val text = if (dark) DARK_TEXT else LIGHT_TEXT
+        val soft = if (dark) DARK_SOFT else LIGHT_SOFT
+        val accent = if (dark) DARK_ACCENT else LIGHT_ACCENT
+        val background = if (dark) R.drawable.surlap_widget_bg_dark else R.drawable.surlap_widget_bg_light
+        val nextBackground = if (dark) R.drawable.surlap_widget_next_dark else R.drawable.surlap_widget_next_light
+
+        views.setInt(R.id.widget_root, "setBackgroundResource", background)
+        views.setInt(R.id.widget_next_class, "setBackgroundResource", nextBackground)
+
+        intArrayOf(
+            R.id.widget_small_title,
+            R.id.widget_medium_heading,
+            R.id.widget_event_0_title,
+            R.id.widget_event_1_title,
+            R.id.widget_event_2_title,
+            R.id.widget_next_class_title,
+        ).forEach { views.setTextColor(it, text) }
+
+        intArrayOf(
+            R.id.widget_small_eyebrow,
+            R.id.widget_small_date,
+            R.id.widget_medium_date,
+            R.id.widget_event_0_time,
+            R.id.widget_event_1_time,
+            R.id.widget_event_2_time,
+            R.id.widget_events_empty,
+            R.id.widget_next_class_time,
+        ).forEach { views.setTextColor(it, soft) }
+
+        intArrayOf(
+            R.id.widget_small_dday,
+            R.id.widget_event_0_dot,
+            R.id.widget_event_1_dot,
+            R.id.widget_event_2_dot,
+            R.id.widget_next_class_label,
+        ).forEach { views.setTextColor(it, accent) }
+    }
+
+    private fun bindSmall(views: RemoteViews, payload: WidgetPayload) {
+        val dDay = payload.dDay
+        views.setTextViewText(R.id.widget_small_dday, dDay?.countdown ?: "—")
+        views.setTextViewText(R.id.widget_small_title, dDay?.title ?: "다가오는 일정 없음")
+        views.setTextViewText(R.id.widget_small_date, dDay?.dateLabel.orEmpty())
+    }
+
+    private fun bindMedium(views: RemoteViews, payload: WidgetPayload) {
+        views.setTextViewText(R.id.widget_medium_date, payload.dateLabel)
+
+        val rowIds = intArrayOf(R.id.widget_event_0, R.id.widget_event_1, R.id.widget_event_2)
+        val dotIds = intArrayOf(R.id.widget_event_0_dot, R.id.widget_event_1_dot, R.id.widget_event_2_dot)
+        val timeIds = intArrayOf(R.id.widget_event_0_time, R.id.widget_event_1_time, R.id.widget_event_2_time)
+        val titleIds = intArrayOf(R.id.widget_event_0_title, R.id.widget_event_1_title, R.id.widget_event_2_title)
+        rowIds.indices.forEach { index ->
+            val event = payload.events.getOrNull(index)
+            views.setViewVisibility(rowIds[index], if (event == null) View.GONE else View.VISIBLE)
+            if (event != null) {
+                event.color?.let { views.setTextColor(dotIds[index], it) }
+                views.setTextViewText(timeIds[index], event.time.ifBlank { "종일" })
+                views.setTextViewText(titleIds[index], event.title)
             }
-            out
-        } catch (_: Throwable) {
-            emptyList()
+        }
+        views.setViewVisibility(
+            R.id.widget_events_empty,
+            if (payload.events.isEmpty()) View.VISIBLE else View.GONE,
+        )
+
+        val nextClass = payload.nextClass
+        views.setViewVisibility(R.id.widget_next_class, if (nextClass == null) View.GONE else View.VISIBLE)
+        if (nextClass != null) {
+            views.setTextViewText(R.id.widget_next_class_title, nextClass.title)
+            views.setTextViewText(R.id.widget_next_class_time, nextClass.time)
         }
     }
 
-    private fun parseHex(hex: String): Int? {
-        if (hex.isBlank()) return null
-        val s = hex.removePrefix("#")
-        return try {
-            val v = s.toLong(16)
-            when (s.length) {
-                6 -> (0xFF000000 or v).toInt()
-                8 -> v.toInt()
-                else -> null
+    private fun parsePayload(widgetData: SharedPreferences): WidgetPayload {
+        val root = widgetData.getString("hs_widget", null)?.let { raw ->
+            try {
+                JSONObject(raw)
+            } catch (_: Throwable) {
+                null
             }
-        } catch (_: Throwable) {
+        }
+
+        val appearance = root.objectOf("appearance")
+        val medium = root.objectOf("medium")
+        val dark = when {
+            appearance?.has("dark") == true -> appearance.optBoolean("dark", false)
+            root?.has("dark") == true -> root.optBoolean("dark", false)
+            root.stringOf("theme") == "dark" -> true
+            else -> widgetData.getString("theme", "light") == "dark"
+        }
+        val dateLabel = medium.stringOf("dateLabel", "date")
+            .ifBlank { root.stringOf("dateLabel", "today", "date") }
+            .ifBlank { widgetData.getString("today", "").orEmpty() }
+
+        return WidgetPayload(
+            dark = dark,
+            dateLabel = dateLabel,
+            dDay = parseDDay(root, widgetData),
+            events = parseEvents(root),
+            nextClass = parseNextClass(root, widgetData),
+        )
+    }
+
+    private fun parseDDay(root: JSONObject?, widgetData: SharedPreferences): DDay? {
+        val canonical = root.objectOf("small")
+        if (canonical != null && canonical.has("available") && !canonical.optBoolean("available")) {
+            return null
+        }
+        if (canonical != null) {
+            val title = canonical.stringOf("title", "name")
+            if (title.isNotBlank()) {
+                val days = canonical.intOf("daysAway", "days")
+                val countdown = canonical.stringOf("label", "countdown", "display")
+                    .ifBlank { formatDDay(days) }
+                val date = canonical.stringOf("dateLabel", "date")
+                return DDay(title = title, countdown = countdown, dateLabel = date)
+            }
+        }
+
+        val value = root?.valueOf("nearestDday", "nearestDDay", "nearestAcademic", "dDay", "dday")
+        val obj = value as? JSONObject
+        val title = when (value) {
+            is JSONObject -> value.stringOf("title", "name", "eventTitle")
+            is String -> value
+            else -> root.stringOf("ddayTitle", "dDayTitle", "nearestDdayTitle")
+        }.ifBlank { widgetData.getString("ddayTitle", "").orEmpty() }
+        if (title.isBlank()) return null
+
+        val countdown = obj?.stringOf("countdown", "display", "dDayLabel", "ddayLabel")
+            .orEmpty()
+            .ifBlank {
+                val days = obj?.intOf("daysAway", "days", "count")
+                    ?: root.intOf("ddayDays", "dDayDays", "nearestDdayDays")
+                formatDDay(days)
+            }
+        val date = obj?.stringOf("dateLabel", "date", "day")
+            .orEmpty()
+            .ifBlank { root.stringOf("ddayDateLabel", "ddayDate", "dDayDate") }
+
+        return DDay(title = title, countdown = countdown, dateLabel = date)
+    }
+
+    private fun parseEvents(root: JSONObject?): List<AgendaEvent> {
+        if (root == null) return emptyList()
+        val canonical = root.objectOf("medium")?.arrayOf("events")
+            ?: root.arrayOf("todayEvents", "eventsToday", "agenda")
+        val source = if (canonical != null) {
+            canonical
+        } else {
+            JSONArray().also { merged ->
+                root.arrayOf("allDay")?.copyInto(merged)
+                root.arrayOf("timed", "events")?.copyInto(merged)
+            }
+        }
+
+        val events = ArrayList<AgendaEvent>(3)
+        for (index in 0 until source.length()) {
+            val item = source.optJSONObject(index) ?: continue
+            val title = item.stringOf("title", "name", "t")
+            if (title.isBlank()) continue
+            val allDay = item.optBoolean("allDay", false)
+            val time = item.stringOf("timeLabel", "time", "startTime", "start", "tm")
+                .ifBlank { if (allDay) "종일" else "" }
+            events += AgendaEvent(
+                title = title,
+                time = time,
+                color = parseColor(item.stringOf("color")),
+            )
+            if (events.size == 3) break
+        }
+        return events
+    }
+
+    private fun parseNextClass(root: JSONObject?, widgetData: SharedPreferences): NextClass? {
+        val canonical = root.objectOf("medium")?.objectOf("nextClass")
+        if (canonical != null && canonical.has("available") && !canonical.optBoolean("available")) {
+            return null
+        }
+        val obj = canonical ?: root?.objectOf("nextClass", "upcomingClass")
+        val title = obj?.stringOf("title", "name", "subject")
+            .orEmpty()
+            .ifBlank { root.stringOf("nextClassName", "nextName") }
+            .ifBlank { widgetData.getString("nextName", "").orEmpty() }
+        if (title.isBlank()) return null
+        val start = obj.stringOf("start", "startTime")
+        val period = obj?.valueOf("period")?.toString().orEmpty()
+        val canonicalTime = when {
+            period.isNotBlank() && start.isNotBlank() -> "${period}교시 · $start"
+            start.isNotBlank() -> start
+            period.isNotBlank() -> "${period}교시"
+            else -> ""
+        }
+        val time = obj?.stringOf("timeLabel", "time", "periodLabel")
+            .orEmpty().ifBlank { canonicalTime }
+            .ifBlank { root.stringOf("nextClassTime", "nextStart") }
+            .ifBlank { widgetData.getString("nextStart", "").orEmpty() }
+        return NextClass(title = title, time = time)
+    }
+
+    private fun formatDDay(days: Int?): String = when {
+        days == null || days == 0 -> "D-DAY"
+        days > 0 -> "D-$days"
+        else -> "D+${-days}"
+    }
+
+    private fun parseColor(raw: String): Int? {
+        val hex = raw.removePrefix("#")
+        if (hex.length != 6 && hex.length != 8) return null
+        return try {
+            val value = hex.toLong(16)
+            if (hex.length == 6) (0xFF000000L or value).toInt() else value.toInt()
+        } catch (_: NumberFormatException) {
             null
         }
     }
 
-    private fun applyPeriodBar(
-        views: RemoteViews,
-        periods: List<Pair<String, Int>>,
-        currentIndex: Int
-    ) {
-        val segIds = intArrayOf(
-            R.id.widget_seg_0, R.id.widget_seg_1, R.id.widget_seg_2,
-            R.id.widget_seg_3, R.id.widget_seg_4, R.id.widget_seg_5,
-            R.id.widget_seg_6
-        )
-        val tickIds = intArrayOf(
-            R.id.widget_seg_0_tick, R.id.widget_seg_1_tick, R.id.widget_seg_2_tick,
-            R.id.widget_seg_3_tick, R.id.widget_seg_4_tick, R.id.widget_seg_5_tick,
-            R.id.widget_seg_6_tick
-        )
-        for (i in 0 until SEG_COUNT) {
-            if (i >= periods.size) {
-                views.setViewVisibility(segIds[i], View.GONE)
-                views.setViewVisibility(tickIds[i], View.GONE)
-                continue
-            }
-            views.setViewVisibility(segIds[i], View.VISIBLE)
-            val isCurrent = i == currentIndex
-            val baseColor = periods[i].second
-            val color = when {
-                isCurrent -> ACCENT
-                i < currentIndex -> dim(baseColor, 0.5f)
-                else -> baseColor
-            }
-            // RemoteViews 는 GradientDrawable 직접 설정 못 함 → setInt 로 background tint.
-            views.setInt(segIds[i], "setBackgroundColor", color)
-            views.setViewVisibility(
-                tickIds[i],
-                if (isCurrent) View.VISIBLE else View.GONE
-            )
+    private fun JSONObject?.valueOf(vararg keys: String): Any? {
+        if (this == null) return null
+        keys.forEach { key ->
+            if (has(key) && !isNull(key)) return opt(key)
         }
+        return null
     }
 
-    private fun dim(color: Int, factor: Float): Int {
-        val a = Color.alpha(color)
-        val r = (Color.red(color) * factor).toInt().coerceIn(0, 255)
-        val g = (Color.green(color) * factor).toInt().coerceIn(0, 255)
-        val b = (Color.blue(color) * factor).toInt().coerceIn(0, 255)
-        return Color.argb(a, r, g, b)
+    private fun JSONObject?.stringOf(vararg keys: String): String {
+        if (this == null) return ""
+        keys.forEach { key ->
+            val value = opt(key)
+            if (value is String && value.isNotBlank()) return value
+        }
+        return ""
+    }
+
+    private fun JSONObject?.intOf(vararg keys: String): Int? {
+        if (this == null) return null
+        keys.forEach { key ->
+            val value = opt(key)
+            when (value) {
+                is Number -> return value.toInt()
+                is String -> value.toIntOrNull()?.let { return it }
+            }
+        }
+        return null
+    }
+
+    private fun JSONObject?.objectOf(vararg keys: String): JSONObject? {
+        if (this == null) return null
+        keys.forEach { key -> optJSONObject(key)?.let { return it } }
+        return null
+    }
+
+    private fun JSONObject?.arrayOf(vararg keys: String): JSONArray? {
+        if (this == null) return null
+        keys.forEach { key -> optJSONArray(key)?.let { return it } }
+        return null
+    }
+
+    private fun JSONArray.copyInto(target: JSONArray) {
+        for (index in 0 until length()) target.put(opt(index))
     }
 }

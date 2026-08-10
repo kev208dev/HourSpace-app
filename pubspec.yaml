@@ -71,6 +71,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/mascot/
+    - assets/brand/
     - assets/icon/
   fonts:
     - family: Pretendard
@@ -102,12 +103,10 @@ flutter:
 # 적용: dart run flutter_native_splash:create
 flutter_native_splash:
   color: "#6B3DF9"
-  image: assets/mascot/splash_icon.png
   android_12:
     color: "#6B3DF9"
-    image: assets/mascot/splash_icon.png
 
-# 앱 런처 아이콘(마스코트 얼굴 + 보라 그라데이션).
+# 앱 런처 아이콘(Surlap 브랜드 심볼 + 보라 그라데이션).
 # 적용: dart run flutter_launcher_icons
 flutter_launcher_icons:
   image_path: "assets/icon/app_icon.png"          # iOS · Android(레거시) 공통 불투명 아이콘
@@ -115,5 +114,5 @@ flutter_launcher_icons:
   remove_alpha_ios: true                           # iOS는 투명 불가 → 알파 제거
   android: true
   adaptive_icon_background: "assets/icon/adaptive_background.png"  # 그라데이션 배경
-  adaptive_icon_foreground: "assets/icon/adaptive_foreground.png" # 얼굴(안전영역 안)
+  adaptive_icon_foreground: "assets/icon/adaptive_foreground.png" # 브랜드 심볼(안전영역 안)
   min_sdk_android: 21

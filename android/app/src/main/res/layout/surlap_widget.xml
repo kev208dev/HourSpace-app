@@ -1,222 +1,299 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Surlap 위젯 (Now/Next 카드) — RemoteViews 제약 안에서 목업 1:1.
-     딥퍼플 그라데이션 배경 + 라벤더 accent + 교시 세그먼트 바. -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@drawable/surlap_widget_bg"
-    android:padding="18dp">
+    android:background="@drawable/surlap_widget_bg_light"
+    android:paddingStart="16dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="8dp">
 
+    <!-- 2x2: the nearest academic D-Day. -->
     <LinearLayout
+        android:id="@+id/widget_small"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:layout_height="match_parent"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
         <TextView
-            android:layout_width="0dp"
+            android:id="@+id/widget_small_eyebrow"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="지금"
-            android:textColor="#FF8E8C97"
-            android:textSize="13sp"
+            android:ellipsize="end"
+            android:fontFamily="sans"
+            android:maxLines="1"
+            android:text="학사 일정"
+            android:textColor="#FF6E6B7A"
+            android:textSize="11sp"
             android:textStyle="bold"
             tools:ignore="HardcodedText" />
+
         <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:id="@+id/widget_small_dday"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
             android:layout_weight="1"
-            android:gravity="end"
-            android:text="다음"
-            android:textColor="#FF8E8C97"
-            android:textSize="13sp"
+            android:ellipsize="end"
+            android:fontFamily="sans"
+            android:gravity="center"
+            android:maxLines="1"
+            android:text="D-7"
+            android:textColor="#FF5A2DF4"
+            android:textSize="32sp"
             android:textStyle="bold"
             tools:ignore="HardcodedText" />
+
+        <TextView
+            android:id="@+id/widget_small_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="sans"
+            android:gravity="center"
+            android:maxLines="1"
+            android:text="다가오는 일정 없음"
+            android:textColor="#FF14131A"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            tools:ignore="HardcodedText" />
+
+        <TextView
+            android:id="@+id/widget_small_date"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:fontFamily="sans"
+            android:gravity="center"
+            android:maxLines="1"
+            android:textColor="#FF6E6B7A"
+            android:textSize="11sp" />
     </LinearLayout>
 
+    <!-- 4x2: up to three events and the next class. -->
     <LinearLayout
+        android:id="@+id/widget_medium"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="4dp">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:visibility="gone">
+
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/widget_medium_heading"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:fontFamily="sans"
+                android:text="오늘"
+                android:textColor="#FF14131A"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                tools:ignore="HardcodedText" />
+
+            <TextView
+                android:id="@+id/widget_medium_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans"
+                android:textColor="#FF6E6B7A"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="3dp"
             android:layout_weight="1"
             android:orientation="vertical">
+
+            <LinearLayout
+                android:id="@+id/widget_event_0"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/widget_event_0_dot"
+                    android:layout_width="12dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:text="•"
+                    android:textColor="#FF5A2DF4"
+                    android:textSize="18sp"
+                    tools:ignore="HardcodedText" />
+
+                <TextView
+                    android:id="@+id/widget_event_0_time"
+                    android:layout_width="52dp"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="sans"
+                    android:maxLines="1"
+                    android:textColor="#FF6E6B7A"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/widget_event_0_title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:fontFamily="sans"
+                    android:maxLines="1"
+                    android:textColor="#FF14131A"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/widget_event_1"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/widget_event_1_dot"
+                    android:layout_width="12dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:text="•"
+                    android:textColor="#FF5A2DF4"
+                    android:textSize="18sp"
+                    tools:ignore="HardcodedText" />
+
+                <TextView
+                    android:id="@+id/widget_event_1_time"
+                    android:layout_width="52dp"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="sans"
+                    android:maxLines="1"
+                    android:textColor="#FF6E6B7A"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/widget_event_1_title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:fontFamily="sans"
+                    android:maxLines="1"
+                    android:textColor="#FF14131A"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/widget_event_2"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/widget_event_2_dot"
+                    android:layout_width="12dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:text="•"
+                    android:textColor="#FF5A2DF4"
+                    android:textSize="18sp"
+                    tools:ignore="HardcodedText" />
+
+                <TextView
+                    android:id="@+id/widget_event_2_time"
+                    android:layout_width="52dp"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="sans"
+                    android:maxLines="1"
+                    android:textColor="#FF6E6B7A"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/widget_event_2_title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:fontFamily="sans"
+                    android:maxLines="1"
+                    android:textColor="#FF14131A"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
             <TextView
-                android:id="@+id/widget_now_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:ellipsize="end"
-                android:textColor="#FFFFFFFF"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                tools:ignore="HardcodedText"
-                android:text="수업 없음" />
-            <TextView
-                android:id="@+id/widget_now_time"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="#FFA98BFF"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                tools:ignore="HardcodedText"
-                android:text="—" />
+                android:id="@+id/widget_events_empty"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fontFamily="sans"
+                android:gravity="center_vertical"
+                android:text="오늘 일정이 없어요"
+                android:textColor="#FF6E6B7A"
+                android:textSize="13sp"
+                android:visibility="gone"
+                tools:ignore="HardcodedText" />
         </LinearLayout>
+
         <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="end">
+            android:id="@+id/widget_next_class"
+            android:layout_width="match_parent"
+            android:layout_height="26dp"
+            android:layout_marginTop="3dp"
+            android:background="@drawable/surlap_widget_next_light"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp">
+
             <TextView
-                android:id="@+id/widget_next_name"
+                android:id="@+id/widget_next_class_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:maxLines="1"
+                android:fontFamily="sans"
+                android:text="다음 수업"
+                android:textColor="#FF5A2DF4"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                tools:ignore="HardcodedText" />
+
+            <TextView
+                android:id="@+id/widget_next_class_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
                 android:ellipsize="end"
-                android:textColor="#FFFFFFFF"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                tools:ignore="HardcodedText"
-                android:text="—" />
+                android:fontFamily="sans"
+                android:maxLines="1"
+                android:textColor="#FF14131A"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
             <TextView
-                android:id="@+id/widget_next_time"
+                android:id="@+id/widget_next_class_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#FFA98BFF"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                tools:ignore="HardcodedText"
-                android:text="—" />
+                android:layout_marginStart="8dp"
+                android:fontFamily="sans"
+                android:textColor="#FF6E6B7A"
+                android:textSize="11sp" />
         </LinearLayout>
     </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/widget_period_bar"
-        android:layout_width="match_parent"
-        android:layout_height="20dp"
-        android:orientation="horizontal"
-        android:layout_marginTop="14dp">
-        <FrameLayout
-            android:id="@+id/widget_seg_0"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:layout_marginEnd="3dp"
-            android:background="@drawable/widget_seg_default">
-            <View
-                android:id="@+id/widget_seg_0_tick"
-                android:layout_width="3dp"
-                android:layout_height="match_parent"
-                android:layout_gravity="center"
-                android:background="@android:color/white"
-                android:visibility="gone" />
-        </FrameLayout>
-        <FrameLayout
-            android:id="@+id/widget_seg_1"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:layout_marginEnd="3dp"
-            android:background="@drawable/widget_seg_default">
-            <View
-                android:id="@+id/widget_seg_1_tick"
-                android:layout_width="3dp"
-                android:layout_height="match_parent"
-                android:layout_gravity="center"
-                android:background="@android:color/white"
-                android:visibility="gone" />
-        </FrameLayout>
-        <FrameLayout
-            android:id="@+id/widget_seg_2"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:layout_marginEnd="3dp"
-            android:background="@drawable/widget_seg_default">
-            <View
-                android:id="@+id/widget_seg_2_tick"
-                android:layout_width="3dp"
-                android:layout_height="match_parent"
-                android:layout_gravity="center"
-                android:background="@android:color/white"
-                android:visibility="gone" />
-        </FrameLayout>
-        <FrameLayout
-            android:id="@+id/widget_seg_3"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:layout_marginEnd="3dp"
-            android:background="@drawable/widget_seg_default">
-            <View
-                android:id="@+id/widget_seg_3_tick"
-                android:layout_width="3dp"
-                android:layout_height="match_parent"
-                android:layout_gravity="center"
-                android:background="@android:color/white"
-                android:visibility="gone" />
-        </FrameLayout>
-        <FrameLayout
-            android:id="@+id/widget_seg_4"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:layout_marginEnd="3dp"
-            android:background="@drawable/widget_seg_default">
-            <View
-                android:id="@+id/widget_seg_4_tick"
-                android:layout_width="3dp"
-                android:layout_height="match_parent"
-                android:layout_gravity="center"
-                android:background="@android:color/white"
-                android:visibility="gone" />
-        </FrameLayout>
-        <FrameLayout
-            android:id="@+id/widget_seg_5"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:layout_marginEnd="3dp"
-            android:background="@drawable/widget_seg_default">
-            <View
-                android:id="@+id/widget_seg_5_tick"
-                android:layout_width="3dp"
-                android:layout_height="match_parent"
-                android:layout_gravity="center"
-                android:background="@android:color/white"
-                android:visibility="gone" />
-        </FrameLayout>
-        <FrameLayout
-            android:id="@+id/widget_seg_6"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="@drawable/widget_seg_default">
-            <View
-                android:id="@+id/widget_seg_6_tick"
-                android:layout_width="3dp"
-                android:layout_height="match_parent"
-                android:layout_gravity="center"
-                android:background="@android:color/white"
-                android:visibility="gone" />
-        </FrameLayout>
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/widget_remaining"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="11dp"
-        android:gravity="center"
-        android:textColor="#FFA4A2AD"
-        android:textSize="13sp"
-        android:textStyle="bold"
-        tools:ignore="HardcodedText"
-        android:text="—" />
-
-</LinearLayout>
+</FrameLayout>
