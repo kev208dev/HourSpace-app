@@ -15,6 +15,10 @@ Bundle ID:
 App Group id 는 Bundle ID 와 달라도 무방하며 `group.com.kev208dev.Surlap` 을 유지한다.
 단, 두 App ID 모두에서 App Groups capability 에 이 그룹이 체크돼 있어야 한다.
 
+Runner App ID 에는 App Groups 외에 **Sign in with Apple** capability 도 켜져 있다
+(로그인용). Apple 로그인 쪽 설정값은 `docs/apple-signin-setup.md` 참고 —
+위젯과는 무관하니 여기서는 App Groups 만 신경 쓰면 된다.
+
 ---
 
 ## 1. 위젯 익스텐션 타겟 생성

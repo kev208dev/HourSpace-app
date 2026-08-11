@@ -1,7 +1,8 @@
-# Sign in with Apple 설정 체크리스트
+# Sign in with Apple 설정
 
-> 코드는 이미 붙어 있다. 아래 대시보드 작업이 끝나면
-> `lib/screens/login/login_screen.dart` 의 `_kAppleEnabled` 를 `true` 로 바꾼다.
+> **상태: 설정 완료.** Apple Developer(App ID·Services ID·Key)와 Supabase
+> Apple provider 가 모두 구성됐고, `lib/screens/login/login_screen.dart` 의
+> `_kAppleEnabled` 는 `true` 다. 아래는 그 최종 값 기록 + 재설정용 절차다.
 
 비밀값(`.p8` private key, client secret JWT)은 **이 저장소에 절대 넣지 않는다.**
 Supabase Dashboard에만 입력한다.
@@ -15,8 +16,8 @@ Supabase Dashboard에만 입력한다.
 | 위젯 익스텐션 Bundle ID | `com.kev208dev.Surlap.SurlapWidget` |
 | App Group | `group.com.kev208dev.Surlap` |
 | Android applicationId | `com.kev208dev.Surlap` |
-| Services ID (웹용, 신규 생성) | `com.kev208dev.surlapapp.web` |
-| Client secret JWT (신규 생성) | `<APPLE_CLIENT_SECRET>` |
+| Services ID (웹·Android 리다이렉트용) | `com.kev208dev.surlapapp.web` |
+| Client secret JWT | `<APPLE_CLIENT_SECRET>` (Supabase Dashboard 에만) |
 
 Bundle ID 는 Apple 기준 case-insensitive 이므로 Xcode 의 `com.kev208dev.Surlap` 과
 등록된 App ID `com.kev208dev.surlap` 은 같은 식별자다. Xcode 값은 바꾸지 않는다.
@@ -51,8 +52,10 @@ Authentication → Providers → Apple
 | 필드 | 값 |
 | --- | --- |
 | Enable | ON |
-| Client IDs | `com.kev208dev.surlap,com.kev208dev.Surlap,com.kev208dev.surlapapp.web` |
+| Client IDs | `com.kev208dev.surlapapp.web,com.kev208dev.surlap,com.kev208dev.Surlap` |
 | Secret Key (for OAuth) | `<APPLE_CLIENT_SECRET>` |
+
+(위 Client IDs 가 **실제로 입력된 값**이다. 순서는 검증에 영향이 없다.)
 
 - Client IDs 는 쉼표로 구분한다(공백 없이).
   앞의 Bundle ID 는 **iOS 네이티브 시트가 주는 id_token 의 `aud`** 와 대조되고,
@@ -69,8 +72,28 @@ Authentication → URL Configuration
 - Site URL: `https://kev208dev.github.io/Surlap/`
 - Redirect URLs: `https://kev208dev.github.io/Surlap/**`, `surlap://login-callback`
 
-## 확인
+## 코드 쪽 동작 (검증 완료)
+
+- **iOS·macOS** — `AppleSignIn.signInNative` 가 OS 시트를 띄우고 `signInWithIdToken`
+  으로 세션을 만든다. nonce 는 Apple 에 **SHA-256 해시**를, Supabase 에 **원본**을
+  준다(`lib/supabase/apple_sign_in.dart`). `test/apple_sign_in_test.dart` 가
+  플랫폼 분기와 해시 규칙을 검증한다.
+  → 이 경로의 audience 는 **번들 ID** 이므로 Client IDs 에 번들 ID 가 반드시 있어야 한다.
+- **웹·Android** — `signInWithProvider(OAuthProvider.apple)` 리다이렉트.
+  이 경로의 audience 는 **Services ID** 다.
+- **웹 복귀 경로** — `_webRedirectUrl()` 이 `Uri.base` 에서 쿼리·프래그먼트만 떼고
+  경로는 보존하므로 `https://kev208dev.github.io/Surlap/` 으로 돌아온다.
+  origin 만 쓰면 `/Surlap/` 서브패스가 빠져 세션을 못 받는다.
+  supabase_flutter 는 웹에서 `webOnlyWindowName: '_self'` 로 같은 탭 리다이렉트를
+  하므로 새 탭 문제도 없다. 복귀 URL `/Surlap/?code=...` 는 실재 경로라
+  `web/404.html` 의 SPA 리다이렉트를 타지 않고, `web/index.html` 의 복원
+  스크립트도 `search[1] === '/'` 가 아니라 그냥 지나간다.
+- **Google** — 같은 `signInWithProvider` 경로를 그대로 쓴다. Apple 활성화는
+  `_kAppleEnabled` 상수 하나만 건드리므로 Google 경로에 영향이 없다.
+
+## 실기기 확인 항목
 
 - iOS 실기기 — Apple 버튼 → 네이티브 시트 → 최초 1회 이름 저장
+  (`aud` 가 `surlap` / `Surlap` 중 무엇으로 오는지 확인해 Client IDs 를 줄일 수 있다)
 - 웹 — Apple 버튼 → appleid.apple.com → `/Surlap/` 로 복귀, 새로고침 시 404 없음
 - Google 로그인이 그대로 동작하는지 함께 확인

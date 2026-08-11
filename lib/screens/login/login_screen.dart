@@ -44,10 +44,11 @@ enum _AuthTab { signIn, signUp }
 const _kGoogleEnabled = true;
 const _kKakaoEnabled = false; // 카카오 앱 미등록
 
-/// Apple — 코드는 다 붙어 있다. 대시보드 Authentication → Providers → Apple 을
-/// 켜고 Client IDs(앱 번들 ID + Services ID)와 secret 을 넣은 뒤 true 로 바꾼다.
-/// 그 설정 없이 true 로 두면 사용자가 버튼을 눌렀을 때 서버 오류만 본다.
-const _kAppleEnabled = false;
+/// Apple — 대시보드 Authentication → Providers → Apple 설정 완료.
+/// Client IDs 에 앱 번들 ID(두 대소문자 형태)와 Services ID 가,
+/// Secret Key 에 client secret JWT 가 들어 있다. 자세한 값은
+/// `docs/apple-signin-setup.md` 참고.
+const _kAppleEnabled = true;
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _idCtrl = TextEditingController();
