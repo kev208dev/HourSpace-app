@@ -1,6 +1,7 @@
-import 'dart:io' show Platform;
-
-import 'package:flutter/foundation.dart' show kIsWeb;
+// dart:io 의 Platform 은 웹에서 쓸 수 없다(빌드가 깨진다).
+// 플랫폼 분기는 foundation 의 defaultTargetPlatform 으로 한다.
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -36,6 +37,15 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 enum _AuthTab { signIn, signUp }
+
+/// Supabase 대시보드(Authentication → Providers)에서 실제로 켜 둔 provider.
+///
+/// 꺼진 provider 를 눌러도 서버가 오류를 주긴 하지만, 그건 왕복 한 번을 쓰고
+/// 나서야 "안 된다"를 알려준다. 여기 플래그로 미리 걸러 즉시 안내한다.
+/// **대시보드에서 켤 때 이 값도 같이 true 로 바꿔야 한다.**
+const _kGoogleEnabled = true;
+const _kKakaoEnabled = false; // 카카오 앱 미등록
+const _kAppleEnabled = false; // iOS 등록 예정
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _idCtrl = TextEditingController();
@@ -95,16 +105,44 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  /// 아직 붙이지 않은 소셜 로그인 — 자리만 잡아 둔다.
-  void _notReady(String provider) =>
-      AppToast.show(context, trf('{0} 로그인은 준비 중입니다.', [provider]));
+  /// 아직 준비되지 않은 provider — 왕복 없이 그 자리에서 안내한다.
+  void _notReady(String label) =>
+      AppToast.show(context, trf('{0} 로그인은 준비 중입니다.', [label]));
+
+  /// 소셜 로그인 — 리다이렉트 방식이라 결과는 콜백으로 돌아온다.
+  ///
+  /// Supabase 대시보드에서 해당 provider 를 켜 두지 않았으면 서버가 오류를
+  /// 주므로, 그 사실을 그대로 안내한다.
+  Future<void> _social(String label, Future<void> Function() run) async {
+    if (sb == null) {
+      AppToast.error(context, tr('서버 설정이 없어 소셜 로그인을 쓸 수 없습니다.'));
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await run();
+    } catch (e) {
+      if (!mounted) return;
+      final s = e.toString().toLowerCase();
+      AppToast.error(
+        context,
+        s.contains('not enabled') || s.contains('unsupported')
+            ? trf('{0} 로그인이 아직 켜져 있지 않습니다.', [label])
+            : trf('{0} 로그인에 실패했습니다.', [label]),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final sh = context.sh;
     final noSupabase = sb == null;
     // Apple 로그인은 iOS·macOS 에서만 노출한다(App Store 요구사항 대응).
-    final appleAvailable = !kIsWeb && (Platform.isIOS || Platform.isMacOS);
+    final appleAvailable = !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.iOS ||
+            defaultTargetPlatform == TargetPlatform.macOS);
 
     return Scaffold(
       backgroundColor: sh.bg,
@@ -200,24 +238,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           const SizedBox(height: Gap.lg),
           const _OrDivider(),
           const SizedBox(height: Gap.md),
-          // 소셜 로그인 — 버튼만 먼저 둔다. 실제 연동은 아직 붙이지 않았다.
           _SocialButton(
             icon: Icons.g_mobiledata_rounded,
             label: tr('Google로 계속'),
-            onTap: () => _notReady('Google'),
+            pending: !_kGoogleEnabled,
+            onTap: _busy
+                ? null
+                : () => _kGoogleEnabled
+                    ? _social('Google',
+                        ref.read(authProvider.notifier).signInGoogle)
+                    : _notReady('Google'),
           ),
           const SizedBox(height: Gap.sm),
           _SocialButton(
             icon: Icons.chat_bubble_rounded,
             label: tr('카카오로 계속'),
-            onTap: () => _notReady(tr('카카오')),
+            pending: !_kKakaoEnabled,
+            onTap: _busy
+                ? null
+                : () => _kKakaoEnabled
+                    ? _social(tr('카카오'),
+                        ref.read(authProvider.notifier).signInKakao)
+                    : _notReady(tr('카카오')),
           ),
           if (appleAvailable) ...[
             const SizedBox(height: Gap.sm),
             _SocialButton(
               icon: Icons.apple_rounded,
               label: tr('Apple로 계속'),
-              onTap: () => _notReady('Apple'),
+              pending: !_kAppleEnabled,
+              onTap: _busy
+                  ? null
+                  : () => _kAppleEnabled
+                      ? _social('Apple',
+                          ref.read(authProvider.notifier).signInApple)
+                      : _notReady('Apple'),
             ),
           ] else ...[
             const SizedBox(height: Gap.sm),
@@ -465,25 +520,37 @@ class _OrDivider extends StatelessWidget {
 class _SocialButton extends StatelessWidget {
   final IconData icon;
   final String label;
-  final VoidCallback onTap;
 
-  const _SocialButton(
-      {required this.icon, required this.label, required this.onTap});
+  /// 아직 켜지지 않은 provider. 누를 수는 있게 두되(안내를 띄운다) 흐리게
+  /// 보이고 "준비 중" 꼬리표를 단다.
+  final bool pending;
+  final VoidCallback? onTap;
+
+  const _SocialButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.pending = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final sh = context.sh;
+    final ink = sh.ink.withValues(alpha: pending ? 0.42 : 1.0);
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: onTap,
         icon: Icon(icon, size: 17),
-        label: Text(label, style: AppType.button.copyWith(fontSize: 14.5)),
+        label: Text(
+          pending ? trf('{0} · 준비 중', [label]) : label,
+          style: AppType.button.copyWith(fontSize: 14.5),
+        ),
         style: OutlinedButton.styleFrom(
           minimumSize: const Size.fromHeight(48),
           shape: const StadiumBorder(),
           side: BorderSide(color: sh.border),
-          foregroundColor: sh.ink,
+          foregroundColor: ink,
           backgroundColor: sh.card,
         ),
       ),

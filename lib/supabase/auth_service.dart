@@ -117,9 +117,56 @@ class AuthNotifier extends Notifier<User?> {
     }
   }
 
-  // 소셜 로그인(Google · 카카오 · Apple)은 화면에 버튼만 먼저 올려 두고
-  // 실제 연동은 아직 붙이지 않았다. 붙일 때 이 자리에 provider 별 진입점을
-  // 추가하고 login_screen 의 _notReady 를 대체한다.
+  // ── 소셜 로그인 ────────────────────────────────────────────────
+  //
+  // 셋 다 Supabase 가 기본 지원하는 provider 라 진입점은 같다. 실제로 되는지는
+  // Supabase 대시보드에서 해당 provider 를 켜 뒀는지에 달려 있고, 꺼져 있으면
+  // 서버가 오류를 준다 — 호출부가 그 오류를 사용자에게 그대로 안내한다.
+
+  /// 웹 OAuth 복귀 URL — 쿼리·프래그먼트(해시 라우트)는 떼고 경로는 보존한다.
+  ///
+  /// origin 만 쓰면 GitHub Pages 서브패스(/Surlap/)가 빠져 앱이 아닌 루트로
+  /// 돌아오고, 세션을 못 받아 로그인이 무한히 반복된다.
+  /// (Android 의 Uri.base 는 file:/// 이라 .origin 이 StateError — 커스텀 스킴을 쓴다)
+  String _webRedirectUrl() {
+    final b = Uri.base;
+    return Uri(
+      scheme: b.scheme,
+      host: b.host,
+      port: b.hasPort ? b.port : null,
+      path: b.path,
+    ).toString();
+  }
+
+  /// provider 공통 진입점. 리다이렉트 방식이라 세션 복원은 콜백 딥링크를
+  /// supabase_flutter 가 받아 처리하고, onAuthStateChange 에서 상태가 갱신된다.
+  Future<void> signInWithProvider(OAuthProvider provider) async {
+    final client = sb;
+    if (client == null) throw Exception('Supabase 클라이언트가 없습니다');
+    try {
+      await client.auth.signInWithOAuth(
+        provider,
+        redirectTo: kIsWeb ? _webRedirectUrl() : 'surlap://login-callback',
+        // iOS 기본값(내장 SFSafariViewController)에서는 Google 이 임베디드 웹뷰로
+        // 보고 흰 화면으로 막는다. 외부 브라우저로 띄워야 커스텀 스킴 콜백으로
+        // 정상 복귀한다(Android 는 supabase_flutter 가 이미 external 강제).
+        authScreenLaunchMode: LaunchMode.externalApplication,
+      );
+    } catch (e, st) {
+      debugPrint('[Auth] ${provider.name} 로그인 실패: ${e.runtimeType} → $e');
+      debugPrint('$st');
+      rethrow;
+    }
+  }
+
+  Future<void> signInGoogle() => signInWithProvider(OAuthProvider.google);
+
+  Future<void> signInKakao() => signInWithProvider(OAuthProvider.kakao);
+
+  /// Apple 로그인 — App Store 4.8 대응. iOS·macOS 에서만 노출한다.
+  /// Supabase 대시보드에 Apple provider(Services ID · Team ID · Key ID · .p8)
+  /// 설정이 있어야 동작한다.
+  Future<void> signInApple() => signInWithProvider(OAuthProvider.apple);
 
   Future<void> signOut() async {
     await _clearCredentials(); // 자동 로그인 비활성화
