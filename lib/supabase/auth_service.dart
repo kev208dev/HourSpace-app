@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/constants/storage_keys.dart';
 import '../storage/local_store.dart';
+import 'apple_sign_in.dart';
 import 'supabase_client.dart';
 import 'account_scope.dart';
 
@@ -163,10 +164,36 @@ class AuthNotifier extends Notifier<User?> {
 
   Future<void> signInKakao() => signInWithProvider(OAuthProvider.kakao);
 
-  /// Apple 로그인 — App Store 4.8 대응. iOS·macOS 에서만 노출한다.
-  /// Supabase 대시보드에 Apple provider(Services ID · Team ID · Key ID · .p8)
-  /// 설정이 있어야 동작한다.
-  Future<void> signInApple() => signInWithProvider(OAuthProvider.apple);
+  /// Apple 로그인 — App Store 4.8 대응.
+  ///
+  /// iOS·macOS 는 OS 네이티브 시트 + signInWithIdToken 을 쓴다. 브라우저
+  /// 왕복이 없어 취소·실패를 그 자리에서 알 수 있고, 심사도 이쪽을 기대한다.
+  /// 그 밖(웹·Android)은 Google 과 똑같은 OAuth 리다이렉트 경로를 탄다.
+  ///
+  /// 어느 쪽이든 세션이 생긴 다음은 완전히 같다 — onAuthStateChange 하나로
+  /// AccountScope 가 스코프 전환·pull·invalidate 를 처리한다.
+  ///
+  /// 네이티브는 Supabase Apple provider 의 Client IDs 에 앱 번들 ID 가,
+  /// 리다이렉트는 Services ID 와 secret 이 들어 있어야 동작한다. 둘 다
+  /// 대시보드 설정이라 여기서 가정하지 않는다.
+  Future<void> signInApple() async {
+    final client = sb;
+    if (client == null) throw Exception('Supabase 클라이언트가 없습니다');
+    if (!AppleSignIn.usesNativeSheet) {
+      return signInWithProvider(OAuthProvider.apple);
+    }
+    try {
+      await AppleSignIn.signInNative(client);
+    } on AppleSignInUnsupported {
+      // 시트를 못 쓰는 기기(시뮬레이터 일부·구형 OS)는 리다이렉트로 돌아간다.
+      debugPrint('[Auth] 네이티브 Apple 로그인 불가 — OAuth 리다이렉트로 전환');
+      return signInWithProvider(OAuthProvider.apple);
+    } catch (e, st) {
+      debugPrint('[Auth] apple 로그인 실패: ${e.runtimeType} → $e');
+      debugPrint('$st');
+      rethrow;
+    }
+  }
 
   Future<void> signOut() async {
     await _clearCredentials(); // 자동 로그인 비활성화

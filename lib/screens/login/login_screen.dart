@@ -1,13 +1,11 @@
-// dart:io 의 Platform 은 웹에서 쓸 수 없다(빌드가 깨진다).
-// 플랫폼 분기는 foundation 의 defaultTargetPlatform 으로 한다.
-import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show User;
 
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/design_tokens.dart';
 import '../../i18n/strings.dart';
+import '../../supabase/apple_sign_in.dart';
 import '../../supabase/auth_service.dart';
 import '../../supabase/supabase_client.dart';
 import '../../widgets/app_toast.dart';
@@ -45,7 +43,11 @@ enum _AuthTab { signIn, signUp }
 /// **대시보드에서 켤 때 이 값도 같이 true 로 바꿔야 한다.**
 const _kGoogleEnabled = true;
 const _kKakaoEnabled = false; // 카카오 앱 미등록
-const _kAppleEnabled = false; // iOS 등록 예정
+
+/// Apple — 코드는 다 붙어 있다. 대시보드 Authentication → Providers → Apple 을
+/// 켜고 Client IDs(앱 번들 ID + Services ID)와 secret 을 넣은 뒤 true 로 바꾼다.
+/// 그 설정 없이 true 로 두면 사용자가 버튼을 눌렀을 때 서버 오류만 본다.
+const _kAppleEnabled = false;
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _idCtrl = TextEditingController();
@@ -97,7 +99,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return tr('처리하지 못했습니다. 잠시 후 다시 시도해 주세요.');
   }
 
+  /// 한 번만 닫는다. 네이티브 로그인은 await 가 끝난 자리와 authProvider 리스너
+  /// 양쪽에서 성공을 알게 되는데, 그대로 두면 화면이 두 번 pop 돼 뒤에 있던
+  /// 화면까지 사라진다.
+  bool _finished = false;
+
   void _finish() {
+    if (_finished) return;
+    _finished = true;
     if (widget.onDone != null) {
       widget.onDone!();
     } else if (Navigator.canPop(context)) {
@@ -121,28 +130,56 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _busy = true);
     try {
       await run();
+      // 네이티브 시트(Apple/iOS)는 여기서 이미 세션이 생겼다. 리다이렉트
+      // 방식은 아직인데, 그건 _closeWhenSignedIn 이 세션이 생기는 순간 닫는다.
+      if (mounted && ref.read(authProvider) != null) _finish();
+    } on AppleSignInCancelled {
+      // 사용자가 시트를 닫았다. 오류가 아니므로 아무것도 띄우지 않는다.
     } catch (e) {
       if (!mounted) return;
-      final s = e.toString().toLowerCase();
-      AppToast.error(
-        context,
-        s.contains('not enabled') || s.contains('unsupported')
-            ? trf('{0} 로그인이 아직 켜져 있지 않습니다.', [label])
-            : trf('{0} 로그인에 실패했습니다.', [label]),
-      );
+      AppToast.error(context, _socialMessage(label, e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
+  /// 소셜 로그인 실패 안내 — 사용자가 할 수 있는 일이 다르므로 구분한다.
+  String _socialMessage(String label, Object e) {
+    if (e is AppleSignInUnsupported) {
+      return tr('이 기기에서는 Apple 로그인을 쓸 수 없습니다.');
+    }
+    final s = e.toString().toLowerCase();
+    if (s.contains('not enabled') ||
+        s.contains('unsupported provider') ||
+        s.contains('provider is not enabled')) {
+      return trf('{0} 로그인이 아직 켜져 있지 않습니다.', [label]);
+    }
+    if (s.contains('socketexception') ||
+        s.contains('failed host lookup') ||
+        s.contains('clientexception') ||
+        s.contains('network')) {
+      return tr('네트워크에 연결하지 못했습니다. 연결을 확인해 주세요.');
+    }
+    return trf('{0} 로그인에 실패했습니다.', [label]);
+  }
+
+  /// 로그인 화면이 떠 있는 동안 세션이 생기면 스스로 닫는다.
+  ///
+  /// 리다이렉트 방식(Android 의 Google·Apple)은 signInWithOAuth 가 브라우저를
+  /// 띄우자마자 반환한다. 세션은 한참 뒤 딥링크로 들어온다. 그래서 await 만
+  /// 믿으면 로그인이 끝났는데도 이 화면이 그대로 남아 있게 된다.
+  /// (웹은 페이지 자체가 다시 로드되므로 이 경로를 타지 않는다.)
+  void _closeWhenSignedIn() {
+    ref.listen<User?>(authProvider, (prev, next) {
+      if (prev == null && next != null && mounted) _finish();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    _closeWhenSignedIn();
     final sh = context.sh;
     final noSupabase = sb == null;
-    // Apple 로그인은 iOS·macOS 에서만 노출한다(App Store 요구사항 대응).
-    final appleAvailable = !kIsWeb &&
-        (defaultTargetPlatform == TargetPlatform.iOS ||
-            defaultTargetPlatform == TargetPlatform.macOS);
 
     return Scaffold(
       backgroundColor: sh.bg,
@@ -238,6 +275,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           const SizedBox(height: Gap.lg),
           const _OrDivider(),
           const SizedBox(height: Gap.md),
+          // Apple 은 전 플랫폼에 노출한다. iOS·macOS 는 OS 시트로, 웹·Android 는
+          // Supabase OAuth 리다이렉트로 같은 계정에 도달한다.
+          //
+          // 다른 소셜 버튼과 함께 둘 때는 Apple 버튼을 맨 위에 두라는 것이
+          // Apple 의 요구사항이다. 그래서 Google 보다 앞에 온다.
+          _AppleButton(
+            pending: !_kAppleEnabled,
+            onTap: _busy
+                ? null
+                : () => _kAppleEnabled
+                    ? _social('Apple',
+                        ref.read(authProvider.notifier).signInApple)
+                    : _notReady('Apple'),
+          ),
+          const SizedBox(height: Gap.sm),
           _SocialButton(
             icon: Icons.g_mobiledata_rounded,
             label: tr('Google로 계속'),
@@ -261,25 +313,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ref.read(authProvider.notifier).signInKakao)
                     : _notReady(tr('카카오')),
           ),
-          if (appleAvailable) ...[
-            const SizedBox(height: Gap.sm),
-            _SocialButton(
-              icon: Icons.apple_rounded,
-              label: tr('Apple로 계속'),
-              pending: !_kAppleEnabled,
-              onTap: _busy
-                  ? null
-                  : () => _kAppleEnabled
-                      ? _social('Apple',
-                          ref.read(authProvider.notifier).signInApple)
-                      : _notReady('Apple'),
-            ),
-          ] else ...[
-            const SizedBox(height: Gap.sm),
-            Text(tr('Apple 로그인은 iOS·macOS에서만 표시됩니다.'),
-                style: AppType.sub.copyWith(
-                    height: 1.5, color: sh.ink.withValues(alpha: 0.45))),
-          ],
           const SizedBox(height: Gap.md),
           SizedBox(
             width: double.infinity,
@@ -552,6 +585,49 @@ class _SocialButton extends StatelessWidget {
           side: BorderSide(color: sh.border),
           foregroundColor: ink,
           backgroundColor: sh.card,
+        ),
+      ),
+    );
+  }
+}
+
+/// Apple 로그인 버튼.
+///
+/// Apple 의 버튼 가이드라인은 (1) 공식 Apple 로고, (2) 배경과 확실히 대비되는
+/// 검정 또는 흰색 바탕, (3) "Apple로 계속하기" 같은 정해진 문구, (4) 로고와
+/// 글자의 비율 유지를 요구한다. 모서리 반경과 너비는 앱에 맞춰도 된다.
+///
+/// 그래서 색만 Apple 규격(밝은 테마=검정 / 어두운 테마=흰색)으로 두고,
+/// 높이·반경·타이포는 옆의 [_SocialButton] 과 똑같이 맞춰 같은 계층으로 보이게 한다.
+class _AppleButton extends StatelessWidget {
+  final bool pending;
+  final VoidCallback? onTap;
+
+  const _AppleButton({required this.onTap, this.pending = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final sh = context.sh;
+    // 어두운 배경 위에서는 검정 버튼이 묻힌다 — Apple 이 흰색 변형을 두는 이유다.
+    final bg = sh.dark ? Colors.white : Colors.black;
+    final fg = sh.dark ? Colors.black : Colors.white;
+    final alpha = pending ? 0.45 : 1.0;
+
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: onTap,
+        icon: Icon(Icons.apple, size: 19, color: fg.withValues(alpha: alpha)),
+        label: Text(
+          pending ? tr('Apple로 계속하기 · 준비 중') : tr('Apple로 계속하기'),
+          style: AppType.button
+              .copyWith(fontSize: 14.5, color: fg.withValues(alpha: alpha)),
+        ),
+        style: FilledButton.styleFrom(
+          minimumSize: const Size.fromHeight(48),
+          shape: const StadiumBorder(),
+          backgroundColor: bg.withValues(alpha: pending ? 0.55 : 1.0),
+          disabledBackgroundColor: bg.withValues(alpha: 0.35),
         ),
       ),
     );
