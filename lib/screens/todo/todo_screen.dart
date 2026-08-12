@@ -32,60 +32,53 @@ class TodoScreen extends ConsumerWidget {
     final undated = todos.where((t) => t.dateKey == null).toList()..sort(_order);
     final done = todos.where((t) => t.done).length;
 
-    return Stack(
+    // 추가 버튼은 MainShell 의 전역 FAB(일정·할 일·기록) 하나만 쓴다.
+    // 하단 여백은 다른 탭과 같게 내비 + 전역 FAB 기준으로만 잡는다.
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(
+          Gap.lg, Gap.md, Gap.lg, kBottomNavClearance + Gap.xl),
       children: [
-        ListView(
-          padding: const EdgeInsets.fromLTRB(
-              Gap.lg, Gap.md, Gap.lg, kBottomNavClearance + 72),
-          children: [
-            _Header(done: done, total: todos.length),
-            const SizedBox(height: Gap.sm),
-            _GroupLabel(tr('날짜가 있는 할 일')),
-            if (dated.isEmpty)
-              _EmptyLine(tr('날짜가 있는 할 일이 없습니다.'))
-            else
-              _TodoCard(todos: dated, showDate: true),
-            const SizedBox(height: Gap.lg),
-            _GroupLabel(tr('날짜 없는 할 일')),
-            if (undated.isEmpty)
-              _EmptyLine(tr('날짜 없는 할 일이 없습니다.'))
-            else
-              _TodoCard(todos: undated, showDate: false),
-            const SizedBox(height: Gap.lg),
-            // 저장 범위를 화면에 그대로 고지한다.
-            Container(
-              padding: const EdgeInsets.all(Gap.md),
-              decoration: BoxDecoration(
-                color: sh.card2,
-                borderRadius: BorderRadius.circular(Radii.md),
+        _Header(done: done, total: todos.length),
+        const SizedBox(height: Gap.sm),
+        _GroupLabel(tr('날짜가 있는 할 일')),
+        if (dated.isEmpty)
+          _EmptyLine(tr('날짜가 있는 할 일이 없습니다.'))
+        else
+          _TodoCard(todos: dated, showDate: true),
+        const SizedBox(height: Gap.lg),
+        _GroupLabel(tr('날짜 없는 할 일')),
+        if (undated.isEmpty)
+          _EmptyLine(tr('날짜 없는 할 일이 없습니다.'))
+        else
+          _TodoCard(todos: undated, showDate: false),
+        const SizedBox(height: Gap.lg),
+        // 저장 범위를 화면에 그대로 고지한다.
+        Container(
+          padding: const EdgeInsets.all(Gap.md),
+          decoration: BoxDecoration(
+            color: sh.card2,
+            borderRadius: BorderRadius.circular(Radii.md),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Icon(Icons.info_outline_rounded,
+                    size: 16, color: sh.ink.withValues(alpha: 0.45)),
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Icon(Icons.info_outline_rounded,
-                        size: 16, color: sh.ink.withValues(alpha: 0.45)),
-                  ),
-                  const SizedBox(width: Gap.sm),
-                  Expanded(
-                    child: Text(
-                      tr('할 일은 계정별로 기기에 저장되고, 클라우드 동기화와 JSON 백업에도 함께 담깁니다.'),
-                      style: AppType.sub.copyWith(
-                          fontSize: 12,
-                          height: 1.55,
-                          color: sh.ink.withValues(alpha: 0.58)),
-                    ),
-                  ),
-                ],
+              const SizedBox(width: Gap.sm),
+              Expanded(
+                child: Text(
+                  tr('할 일은 계정별로 기기에 저장되고, 클라우드 동기화와 JSON 백업에도 함께 담깁니다.'),
+                  style: AppType.sub.copyWith(
+                      fontSize: 12,
+                      height: 1.55,
+                      color: sh.ink.withValues(alpha: 0.58)),
+                ),
               ),
-            ),
-          ],
-        ),
-        Positioned(
-          right: Gap.lg,
-          bottom: kBottomNavClearance,
-          child: _AddFab(onTap: () => showAddTodoModal(context)),
+            ],
+          ),
         ),
       ],
     );
@@ -294,34 +287,5 @@ class _TodoRow extends ConsumerWidget {
     } catch (_) {
       return '';
     }
-  }
-}
-
-/// 우하단 추가 버튼 — 56px, radius 20, accent 채움.
-class _AddFab extends StatelessWidget {
-  final VoidCallback onTap;
-  const _AddFab({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final sh = context.sh;
-    return Semantics(
-      button: true,
-      label: tr('할 일 추가'),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 56,
-          height: 56,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: sh.accent,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: sh.shadowLift,
-          ),
-          child: Icon(Icons.add_rounded, size: 25, color: sh.onAccent),
-        ),
-      ),
-    );
   }
 }
