@@ -13,6 +13,8 @@ import '../../providers/themes_provider.dart';
 import '../../supabase/auth_service.dart';
 import '../../supabase/supabase_client.dart';
 import '../../widgets/bottom_nav_bar.dart';
+import '../../widgets/screen_header.dart';
+import '../../widgets/ui_kit.dart';
 import '../login/login_screen.dart';
 
 /// 공유 (핸드오프 H1 · spec §10).
@@ -34,7 +36,6 @@ class _SharedScreenState extends ConsumerState<SharedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final sh = context.sh;
     final signedIn = ref.watch(authProvider) != null && sb != null;
     final themes = ref.watch(themesProvider);
     final owned = themes
@@ -48,28 +49,22 @@ class _SharedScreenState extends ConsumerState<SharedScreen> {
       padding: const EdgeInsets.fromLTRB(
           Gap.lg, Gap.md, Gap.lg, kBottomNavClearance),
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(tr('공유'),
-                  style: AppType.display.copyWith(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: sh.ink)),
-            ),
-            _IconBtn(
+        SurlapScreenHeader(
+          title: tr('공유'),
+          actions: [
+            SurlapIconButton(
               icon: Icons.emoji_events_rounded,
               tooltip: tr('스포츠 구독'),
               onTap: () => showSportsSubscribeSheet(context),
             ),
-            _IconBtn(
+            SurlapIconButton(
               icon: Icons.add_rounded,
               tooltip: tr('코드로 구독'),
               onTap: () => showThemeManagerModal(context),
             ),
           ],
         ),
-        const SizedBox(height: Gap.sm),
+        const SizedBox(height: Gap.md),
         if (!signedIn)
           _LockedCard(
             onLogin: () => showLoginScreen(context),
@@ -93,27 +88,6 @@ class _SharedScreenState extends ConsumerState<SharedScreen> {
   }
 }
 
-class _IconBtn extends StatelessWidget {
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-  const _IconBtn(
-      {required this.icon, required this.tooltip, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) => Tooltip(
-        message: tooltip,
-        child: InkResponse(
-          onTap: onTap,
-          radius: 22,
-          child: Padding(
-            padding: const EdgeInsets.all(6),
-            child: Icon(icon, size: 20, color: context.sh.ink),
-          ),
-        ),
-      );
-}
-
 /// 미로그인 — 자물쇠 + 안내 + 로그인 / 스포츠 구독 버튼.
 class _LockedCard extends StatelessWidget {
   final VoidCallback onLogin;
@@ -123,13 +97,7 @@ class _LockedCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sh = context.sh;
-    return Container(
-      padding: const EdgeInsets.all(Gap.lg),
-      decoration: BoxDecoration(
-        color: sh.card,
-        borderRadius: BorderRadius.circular(Radii.card),
-        boxShadow: sh.shadowCard,
-      ),
+    return SurlapCard(
       child: Column(
         children: [
           Icon(Icons.lock_outline_rounded, size: 28, color: sh.accent),
@@ -140,33 +108,16 @@ class _LockedCard extends StatelessWidget {
           Text(
             tr('공유 캘린더는 로그인과 서버 연결이 모두 있어야 씁니다. 스포츠 구독은 계정 없이도 사용할 수 있습니다.'),
             textAlign: TextAlign.center,
-            style: AppType.sub.copyWith(
-                height: 1.6, color: sh.ink.withValues(alpha: 0.55)),
+            style: AppType.sub.copyWith(height: 1.6, color: sh.inkBody),
           ),
           const SizedBox(height: Gap.md),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: onLogin,
-              style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(46),
-                  shape: const StadiumBorder()),
-              child: Text(tr('로그인')),
-            ),
-          ),
+          SurlapButton(label: tr('로그인'), onTap: onLogin, block: true),
           const SizedBox(height: Gap.sm),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: onSports,
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(46),
-                shape: const StadiumBorder(),
-                side: BorderSide(color: sh.border),
-                foregroundColor: sh.ink,
-              ),
-              child: Text(tr('스포츠 구독 보기')),
-            ),
+          SurlapButton(
+            label: tr('스포츠 구독 보기'),
+            onTap: onSports,
+            kind: SurlapButtonKind.secondary,
+            block: true,
           ),
         ],
       ),
@@ -189,47 +140,16 @@ class _SegmentedTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sh = context.sh;
-    final items = [
-      (_ShareTab.owned, trf('내가 공유 중 {0}', [ownedCount])),
-      (_ShareTab.subscribed, trf('구독 중 {0}', [subCount])),
-    ];
+    const tabs = _ShareTab.values;
     return Align(
       alignment: Alignment.centerLeft,
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: sh.border),
-          borderRadius: BorderRadius.circular(Radii.md),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: IntrinsicHeight(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (var i = 0; i < items.length; i++)
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => onPick(items[i].$1),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 18, vertical: 9),
-                    decoration: BoxDecoration(
-                      color: items[i].$1 == current
-                          ? sh.accent
-                          : Colors.transparent,
-                      border: i == 0
-                          ? null
-                          : Border(left: BorderSide(color: sh.border)),
-                    ),
-                    child: Text(items[i].$2,
-                        style: AppType.body.copyWith(
-                            color:
-                                items[i].$1 == current ? sh.bg : sh.ink)),
-                  ),
-                ),
-            ],
-          ),
-        ),
+      child: SurlapSegmentedControl(
+        segments: [
+          surlapSegment(trf('내가 공유 중 {0}', [ownedCount])),
+          surlapSegment(trf('구독 중 {0}', [subCount])),
+        ],
+        index: tabs.indexOf(current),
+        onChanged: (i) => onPick(tabs[i]),
       ),
     );
   }
@@ -243,7 +163,8 @@ class _OwnedList extends StatelessWidget {
   Widget build(BuildContext context) {
     final sh = context.sh;
     if (themes.isEmpty) {
-      return _EmptyNote(tr('아직 공유 중인 캘린더가 없습니다. 캘린더 관리에서 공유를 시작해 보세요.'));
+      return SurlapInlineEmptyState(
+          tr('아직 공유 중인 캘린더가 없습니다. 캘린더 관리에서 공유를 시작해 보세요.'));
     }
     return Column(
       children: [
@@ -276,7 +197,8 @@ class _SubscribedList extends StatelessWidget {
   Widget build(BuildContext context) {
     final sh = context.sh;
     if (themes.isEmpty) {
-      return _EmptyNote(tr('구독 중인 캘린더가 없습니다. 우측 상단 + 로 코드를 입력해 구독하세요.'));
+      return SurlapInlineEmptyState(
+          tr('구독 중인 캘린더가 없습니다. 우측 상단 + 로 코드를 입력해 구독하세요.'));
     }
     return Column(
       children: [
@@ -317,17 +239,10 @@ class _ShareCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sh = context.sh;
-    return InkWell(
+    return SurlapCard(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(Radii.card),
-      child: Container(
-        padding: const EdgeInsets.all(Gap.md),
-        decoration: BoxDecoration(
-          color: sh.card,
-          borderRadius: BorderRadius.circular(Radii.card),
-          boxShadow: sh.shadowCard,
-        ),
-        child: Column(
+      padding: const EdgeInsets.all(Gap.lg),
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -372,10 +287,8 @@ class _ShareCard extends StatelessWidget {
                     ),
                     child: Text(
                       theme.shareCode!,
-                      style: AppType.number.copyWith(
-                          fontSize: 15,
-                          letterSpacing: 1.8,
-                          color: sh.ink),
+                      style: AppType.number
+                          .copyWith(letterSpacing: 1.8, color: sh.ink),
                     ),
                   ),
                   const Spacer(),
@@ -384,28 +297,9 @@ class _ShareCard extends StatelessWidget {
               ),
             ],
           ],
-        ),
       ),
     );
   }
 }
 
-class _EmptyNote extends StatelessWidget {
-  final String text;
-  const _EmptyNote(this.text);
 
-  @override
-  Widget build(BuildContext context) {
-    final sh = context.sh;
-    return Container(
-      padding: const EdgeInsets.all(Gap.md),
-      decoration: BoxDecoration(
-        color: sh.card2,
-        borderRadius: BorderRadius.circular(Radii.md),
-      ),
-      child: Text(text,
-          style: AppType.sub.copyWith(
-              height: 1.55, color: sh.ink.withValues(alpha: 0.58))),
-    );
-  }
-}

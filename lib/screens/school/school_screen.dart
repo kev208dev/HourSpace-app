@@ -14,7 +14,7 @@ import '../../providers/view_provider.dart';
 import '../../supabase/neis_service.dart' show NeisSchool, academicVisibleForGrade;
 import '../../widgets/bottom_nav_bar.dart';
 import '../../widgets/school_logo.dart';
-import '../../widgets/section_header.dart';
+import '../../widgets/ui_kit.dart';
 import '../timetable_view/timetable_view.dart';
 import '../school/school_connect_screen.dart';
 
@@ -43,8 +43,9 @@ class SchoolScreen extends ConsumerWidget {
         const SizedBox(height: Gap.lg),
 
         // ── 오늘 시간표 ──
-        SectionHeader(
+        SurlapSection(
           title: tr('오늘 시간표'),
+          first: true,
           actionLabel: tr('크게 보기'),
           onAction: () => Navigator.of(context).push(
             MaterialPageRoute<void>(builder: (_) => const _TimetablePage()),
@@ -53,13 +54,11 @@ class SchoolScreen extends ConsumerWidget {
         _TodayPeriods(dateKey: todayKey),
 
         // ── 급식 ──
-        const SizedBox(height: Gap.xl),
-        SectionHeader(title: tr('오늘 급식')),
+        SurlapSection(title: tr('오늘 급식')),
         _Meal(text: neis.lunch[today.weekday - 1]),
 
         // ── 학사일정 ──
-        const SizedBox(height: Gap.xl),
-        SectionHeader(title: tr('학사일정')),
+        SurlapSection(title: tr('학사일정')),
         _AcademicList(grade: school.grade),
 
         const SizedBox(height: Gap.xl),

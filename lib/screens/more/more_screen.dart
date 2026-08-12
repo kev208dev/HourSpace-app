@@ -18,6 +18,8 @@ import '../../supabase/auth_service.dart';
 import '../../supabase/neis_service.dart' show NeisSchool;
 import '../../supabase/supabase_client.dart';
 import '../../widgets/bottom_nav_bar.dart';
+import '../../widgets/screen_header.dart';
+import '../../widgets/ui_kit.dart';
 import '../login/login_screen.dart';
 import '../settings_view.dart' show SettingsSections;
 import '../calendar/categories_screen.dart';
@@ -52,6 +54,8 @@ class MoreScreen extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(
           Gap.lg, Gap.md, Gap.lg, kBottomNavClearance),
       children: [
+        SurlapScreenHeader(title: tr('내 정보')),
+        const SizedBox(height: Gap.md),
         _ProfileCard(
           name: signedIn ? userDisplayName(user) : tr('게스트'),
           sub: school == null
@@ -166,17 +170,9 @@ class _ProfileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sh = context.sh;
-    return InkWell(
+    return SurlapCard(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(Radii.card),
-      child: Container(
-        padding: const EdgeInsets.all(Gap.md),
-        decoration: BoxDecoration(
-          color: sh.card,
-          borderRadius: BorderRadius.circular(Radii.card),
-          boxShadow: sh.shadowCard,
-        ),
-        child: Row(
+      child: Row(
           children: [
             Container(
               width: 48,
@@ -208,8 +204,7 @@ class _ProfileCard extends StatelessWidget {
             if (onTap != null)
               Icon(Icons.chevron_right_rounded,
                   size: 15, color: sh.ink.withValues(alpha: 0.30)),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -280,34 +275,20 @@ class _Group extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sh = context.sh;
-    return Padding(
-      padding: const EdgeInsets.only(top: Gap.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: Gap.sm),
-            child: Text(head,
-                style: AppType.label
-                    .copyWith(color: sh.ink.withValues(alpha: 0.50))),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SurlapSection(title: head, style: SurlapSectionStyle.overline),
+        SurlapCard(
+          list: true,
+          child: Column(
+            children: [
+              for (var i = 0; i < items.length; i++)
+                _Row(item: items[i], last: i == items.length - 1),
+            ],
           ),
-          Container(
-            decoration: BoxDecoration(
-              color: sh.card,
-              borderRadius: BorderRadius.circular(Radii.card),
-              boxShadow: sh.shadowCard,
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              children: [
-                for (var i = 0; i < items.length; i++)
-                  _Row(item: items[i], last: i == items.length - 1),
-              ],
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -320,16 +301,10 @@ class _Row extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sh = context.sh;
-    return InkWell(
+    return SurlapRow(
+      last: last,
       onTap: item.onTap,
-      child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: Gap.md, vertical: 14),
-        decoration: BoxDecoration(
-          border:
-              last ? null : Border(bottom: BorderSide(color: sh.border)),
-        ),
-        child: Row(
+      child: Row(
           children: [
             Icon(item.icon, size: 19, color: sh.accent),
             const SizedBox(width: 12),
@@ -338,8 +313,7 @@ class _Row extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(item.label,
-                      style: AppType.button.copyWith(
-                          fontSize: 14.5, color: sh.ink)),
+                      style: AppType.button.copyWith(color: sh.ink)),
                   if (item.sub.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(item.sub,
@@ -361,14 +335,12 @@ class _Row extends StatelessWidget {
                   borderRadius: BorderRadius.circular(Radii.pill),
                 ),
                 child: Text(tr('계정 필요'),
-                    style: AppType.micro.copyWith(
-                        fontSize: 10,
-                        color: sh.ink.withValues(alpha: 0.50))),
+                    style: AppType.micro
+                        .copyWith(color: sh.ink.withValues(alpha: 0.50))),
               ),
-            Icon(Icons.chevron_right_rounded,
-                size: 15, color: sh.ink.withValues(alpha: 0.30)),
-          ],
-        ),
+          Icon(Icons.chevron_right_rounded,
+              size: 15, color: sh.ink.withValues(alpha: 0.30)),
+        ],
       ),
     );
   }

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme/design_tokens.dart';
 import '../i18n/strings.dart';
 import '../modals/theme_manager_modal.dart';
-import '../widgets/view_segment.dart';
+import '../widgets/ui_kit.dart';
 import 'sports/sports_subscription_section.dart';
 
 /// 공유 및 구독 화면 — 상단 세그먼트 2개: 캘린더 공유 / 스포츠 구독.
@@ -24,10 +24,14 @@ class _ThemeSharePageState extends ConsumerState<ThemeSharePage> {
         // ── 상단 세그먼트("캘린더 공유" | "스포츠 구독") ──
         Padding(
           padding: const EdgeInsets.fromLTRB(Gap.lg, Gap.sm, Gap.lg, Gap.sm),
-          child: ViewSegment(
+          child: SurlapSegmentedControl(
             index: _segment,
             onChanged: (i) => setState(() => _segment = i),
-            labels: [tr('캘린더 공유'), tr('스포츠 구독')],
+            segments: [
+              surlapSegment(tr('캘린더 공유')),
+              surlapSegment(tr('스포츠 구독')),
+            ],
+            expand: true,
           ),
         ),
         Expanded(

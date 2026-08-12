@@ -12,6 +12,8 @@ import '../../modals/add_edit_event_modal.dart';
 import '../../modals/event_detail_sheet.dart';
 import '../../providers/view_provider.dart';
 import '../../widgets/bottom_nav_bar.dart';
+import '../../widgets/screen_header.dart';
+import '../../widgets/ui_kit.dart';
 import '../day_view/day_view.dart';
 import '../planner_view/planner_view.dart';
 import '../search_view.dart';
@@ -62,20 +64,35 @@ class _CalendarHeader extends ConsumerWidget {
         children: [
           Row(
             children: [
-              _Caret(icon: Icons.chevron_left_rounded, onTap: () => n.step(-1)),
+              SurlapIconButton(
+                icon: Icons.chevron_left_rounded,
+                onTap: () => n.step(-1),
+                tooltip: tr('이전'),
+              ),
               Text(_title(view),
-                  style: AppType.display.copyWith(
-                      fontSize: 22, letterSpacing: -0.44, color: sh.ink)),
-              _Caret(icon: Icons.chevron_right_rounded, onTap: () => n.step(1)),
+                  style: AppType.navTitle.copyWith(color: sh.ink)),
+              SurlapIconButton(
+                icon: Icons.chevron_right_rounded,
+                onTap: () => n.step(1),
+                tooltip: tr('다음'),
+              ),
               const Spacer(),
-              _GhostButton(label: tr('오늘'), onTap: n.goToToday),
-              _Caret(
-                  icon: Icons.search_rounded,
-                  onTap: () => showSearchSheet(context)),
-              _Caret(
+              SurlapButton(
+                label: tr('오늘'),
+                onTap: n.goToToday,
+                kind: SurlapButtonKind.ghost,
+                dense: true,
+              ),
+              SurlapIconButton(
+                icon: Icons.search_rounded,
+                onTap: () => showSearchSheet(context),
+                tooltip: tr('검색'),
+              ),
+              SurlapIconButton(
                 icon: Icons.bolt_rounded,
                 onTap: () => showAddEditEventModal(context,
                     dateKey: view.selectedDay),
+                tooltip: tr('빠른 추가'),
               ),
             ],
           ),
@@ -96,40 +113,6 @@ class _CalendarHeader extends ConsumerWidget {
   }
 }
 
-class _Caret extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _Caret({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) => InkResponse(
-        onTap: onTap,
-        radius: 20,
-        child: Padding(
-          padding: const EdgeInsets.all(5),
-          child: Icon(icon, size: 19, color: context.sh.ink),
-        ),
-      );
-}
-
-class _GhostButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  const _GhostButton({required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) => InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(Radii.pill),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          child: Text(label,
-              style: AppType.sub.copyWith(
-                  fontWeight: FontWeight.w600, color: context.sh.accent)),
-        ),
-      );
-}
-
 /// 보기 모드 세그먼트 — 연 · 월 · 3일 · 하루.
 /// 선택은 accent 채움 + bg 글자, 사이는 divider 세로선.
 class CalendarModeSegment extends ConsumerWidget {
@@ -137,48 +120,14 @@ class CalendarModeSegment extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sh = context.sh;
     final current = ref.watch(viewProvider).calendarMode;
     final n = ref.read(viewProvider.notifier);
     const modes = CalendarViewMode.values;
 
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: sh.border),
-        borderRadius: BorderRadius.circular(Radii.md),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: IntrinsicHeight(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var i = 0; i < modes.length; i++)
-              Semantics(
-                button: true,
-                selected: modes[i] == current,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => n.setCalendarMode(modes[i]),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 15, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: modes[i] == current ? sh.accent : Colors.transparent,
-                      border: i == 0
-                          ? null
-                          : Border(left: BorderSide(color: sh.border)),
-                    ),
-                    child: Text(
-                      tr(modes[i].label),
-                      style: AppType.sub.copyWith(
-                          color: modes[i] == current ? sh.bg : sh.ink),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
+    return SurlapSegmentedControl(
+      segments: [for (final m in modes) surlapSegment(tr(m.label))],
+      index: modes.indexOf(current),
+      onChanged: (i) => n.setCalendarMode(modes[i]),
     );
   }
 }
@@ -212,20 +161,21 @@ class SelectedDayList extends ConsumerWidget {
                 style: AppType.body.copyWith(color: sh.ink),
               ),
               const Spacer(),
-              _GhostButton(
+              SurlapButton(
                 label: tr('하루 보기'),
                 onTap: () => ref
                     .read(viewProvider.notifier)
                     .setCalendarMode(CalendarViewMode.day),
+                kind: SurlapButtonKind.ghost,
+                dense: true,
               ),
             ],
           ),
           if (items.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: Gap.sm),
-              child: Text(tr('항목이 없어 한 번 더 누르면 바로 이동합니다.'),
-                  style: AppType.sub
-                      .copyWith(color: sh.ink.withValues(alpha: 0.45))),
+              padding: const EdgeInsets.only(top: Gap.sm),
+              child: SurlapInlineEmptyState(
+                  tr('항목이 없어 한 번 더 누르면 바로 이동합니다.')),
             )
           else
             for (final item in items) _SelectedRow(item: item),

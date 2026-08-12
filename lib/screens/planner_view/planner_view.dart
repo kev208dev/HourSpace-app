@@ -439,7 +439,7 @@ class _PlannerViewState extends ConsumerState<PlannerView> {
                           style: AppType.label.copyWith(
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
-                              color: isToday ? Colors.white : sh.ink)),
+                              color: isToday ? sh.onAccent : sh.ink)),
                     ),
                   ],
                 ),

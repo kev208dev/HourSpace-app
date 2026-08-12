@@ -761,10 +761,9 @@ class _NowLine extends StatelessWidget {
                   ),
                   child: Text(
                     timeText,
-                    style: const TextStyle(
+                    style: AppType.micro.copyWith(
                       fontSize: 9.5,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: sh.onAccent,
                       height: 1.0,
                     ),
                   ),

@@ -11,6 +11,8 @@ import '../../models/todo_item.dart';
 import '../../modals/add_todo_modal.dart';
 import '../../providers/todos_provider.dart';
 import '../../widgets/bottom_nav_bar.dart';
+import '../../widgets/screen_header.dart';
+import '../../widgets/ui_kit.dart';
 import '../search_view.dart';
 
 /// 할 일 (핸드오프 E1 · spec §8).
@@ -38,47 +40,42 @@ class TodoScreen extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(
           Gap.lg, Gap.md, Gap.lg, kBottomNavClearance + Gap.xl),
       children: [
-        _Header(done: done, total: todos.length),
-        const SizedBox(height: Gap.sm),
-        _GroupLabel(tr('날짜가 있는 할 일')),
+        SurlapScreenHeader(
+          title: tr('할 일'),
+          actions: [
+            SurlapIconButton(
+              icon: Icons.search_rounded,
+              onTap: () => showSearchSheet(context),
+              tooltip: tr('검색'),
+            ),
+          ],
+        ),
+        Text(
+          trf('{0} / {1} 완료', [done, todos.length]),
+          style: AppType.sub.copyWith(color: sh.inkBody),
+        ),
+        SurlapSection(
+          title: tr('날짜가 있는 할 일'),
+          style: SurlapSectionStyle.overline,
+          first: true,
+        ),
         if (dated.isEmpty)
-          _EmptyLine(tr('날짜가 있는 할 일이 없습니다.'))
+          SurlapInlineEmptyState(tr('날짜가 있는 할 일이 없습니다.'))
         else
           _TodoCard(todos: dated, showDate: true),
-        const SizedBox(height: Gap.lg),
-        _GroupLabel(tr('날짜 없는 할 일')),
+        SurlapSection(
+          title: tr('날짜 없는 할 일'),
+          style: SurlapSectionStyle.overline,
+        ),
         if (undated.isEmpty)
-          _EmptyLine(tr('날짜 없는 할 일이 없습니다.'))
+          SurlapInlineEmptyState(tr('날짜 없는 할 일이 없습니다.'))
         else
           _TodoCard(todos: undated, showDate: false),
-        const SizedBox(height: Gap.lg),
+        const SizedBox(height: Gap.xl),
         // 저장 범위를 화면에 그대로 고지한다.
-        Container(
-          padding: const EdgeInsets.all(Gap.md),
-          decoration: BoxDecoration(
-            color: sh.card2,
-            borderRadius: BorderRadius.circular(Radii.md),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Icon(Icons.info_outline_rounded,
-                    size: 16, color: sh.ink.withValues(alpha: 0.45)),
-              ),
-              const SizedBox(width: Gap.sm),
-              Expanded(
-                child: Text(
-                  tr('할 일은 계정별로 기기에 저장되고, 클라우드 동기화와 JSON 백업에도 함께 담깁니다.'),
-                  style: AppType.sub.copyWith(
-                      fontSize: 12,
-                      height: 1.55,
-                      color: sh.ink.withValues(alpha: 0.58)),
-                ),
-              ),
-            ],
-          ),
+        SurlapNotice(
+          tr('할 일은 계정별로 기기에 저장되고, 클라우드 동기화와 JSON 백업에도 함께 담깁니다.'),
+          boxed: true,
         ),
       ],
     );
@@ -93,72 +90,6 @@ class TodoScreen extends ConsumerWidget {
   }
 }
 
-class _Header extends StatelessWidget {
-  final int done;
-  final int total;
-  const _Header({required this.done, required this.total});
-
-  @override
-  Widget build(BuildContext context) {
-    final sh = context.sh;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(tr('할 일'),
-                  style: AppType.display.copyWith(
-                      fontSize: 26, fontWeight: FontWeight.w700, color: sh.ink)),
-              const SizedBox(height: 4),
-              Text(
-                trf('{0} / {1} 완료', [done, total]),
-                style: AppType.sub
-                    .copyWith(color: sh.ink.withValues(alpha: 0.55)),
-              ),
-            ],
-          ),
-        ),
-        InkResponse(
-          onTap: () => showSearchSheet(context),
-          radius: 22,
-          child: Padding(
-            padding: const EdgeInsets.all(6),
-            child: Icon(Icons.search_rounded, size: 20, color: sh.ink),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _GroupLabel extends StatelessWidget {
-  final String text;
-  const _GroupLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: Gap.sm, bottom: Gap.sm),
-        child: Text(text,
-            style: AppType.label
-                .copyWith(color: context.sh.ink.withValues(alpha: 0.50))),
-      );
-}
-
-class _EmptyLine extends StatelessWidget {
-  final String text;
-  const _EmptyLine(this.text);
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: Gap.md),
-        child: Text(text,
-            style: AppType.body
-                .copyWith(color: context.sh.ink.withValues(alpha: 0.42))),
-      );
-}
-
 /// 할 일 카드 — 흰 카드 안에 행이 divider 로 나뉜다.
 class _TodoCard extends StatelessWidget {
   final List<TodoItem> todos;
@@ -167,14 +98,8 @@ class _TodoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sh = context.sh;
-    return Container(
-      decoration: BoxDecoration(
-        color: sh.card,
-        borderRadius: BorderRadius.circular(Radii.card),
-        boxShadow: sh.shadowCard,
-      ),
-      clipBehavior: Clip.antiAlias,
+    return SurlapCard(
+      list: true,
       child: Column(
         children: [
           for (var i = 0; i < todos.length; i++)
@@ -203,71 +128,61 @@ class _TodoRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sh = context.sh;
-    return InkWell(
+    return SurlapRow(
+      last: last,
+      opacity: todo.done ? 0.55 : 1,
       onTap: () => ref.read(todosProvider.notifier).toggleDone(todo.id),
       onLongPress: () => showAddTodoModal(context, edit: todo),
-      child: Opacity(
-        opacity: todo.done ? 0.55 : 1,
-        child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: Gap.md, vertical: 13),
-          decoration: BoxDecoration(
-            border: last
-                ? null
-                : Border(bottom: BorderSide(color: sh.border)),
-          ),
-          child: Row(
-            children: [
-              Icon(todoStatusIcon(todo.status),
-                  size: 21,
-                  color: todoStatusColor(todo.status, todo.priority, sh)),
-              const SizedBox(width: 11),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      todo.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppType.button.copyWith(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w400,
-                        color: sh.ink,
-                        decoration:
-                            todo.done ? TextDecoration.lineThrough : null,
-                        decorationColor: sh.ink.withValues(alpha: 0.45),
-                      ),
-                    ),
-                    if (showDate) ...[
-                      const SizedBox(height: 3),
-                      Text(
-                        '${_statusLabel(todo)} · ${_dateLabel(todo)}',
-                        style: AppType.caption.copyWith(
-                            color: sh.ink.withValues(alpha: 0.48)),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (todo.hasPriority) ...[
-                const SizedBox(width: Gap.sm),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: todoPriorityColor(todo.priority, sh)
-                        .withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(Radii.pill),
+      child: Row(
+        children: [
+          Icon(todoStatusIcon(todo.status),
+              size: 21,
+              color: todoStatusColor(todo.status, todo.priority, sh)),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  todo.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppType.button.copyWith(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w400,
+                    color: sh.ink,
+                    decoration:
+                        todo.done ? TextDecoration.lineThrough : null,
+                    decorationColor: sh.ink.withValues(alpha: 0.45),
                   ),
-                  child: Text('P${todo.priority}',
-                      style: AppType.micro.copyWith(
-                          color: todoPriorityColor(todo.priority, sh))),
                 ),
+                if (showDate) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    '${_statusLabel(todo)} · ${_dateLabel(todo)}',
+                    style: AppType.caption.copyWith(
+                        color: sh.ink.withValues(alpha: 0.48)),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
-        ),
+          if (todo.hasPriority) ...[
+            const SizedBox(width: Gap.sm),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+              decoration: BoxDecoration(
+                color: todoPriorityColor(todo.priority, sh)
+                    .withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(Radii.pill),
+              ),
+              child: Text('P${todo.priority}',
+                  style: AppType.micro.copyWith(
+                      color: todoPriorityColor(todo.priority, sh))),
+            ),
+          ],
+        ],
       ),
     );
   }

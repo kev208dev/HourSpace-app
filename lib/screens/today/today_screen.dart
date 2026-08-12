@@ -23,6 +23,8 @@ import '../../providers/user_type_provider.dart';
 import '../../providers/view_provider.dart';
 import '../../supabase/neis_service.dart' show NeisSchool;
 import '../../widgets/bottom_nav_bar.dart';
+import '../../widgets/screen_header.dart';
+import '../../widgets/ui_kit.dart';
 import '../search_view.dart';
 
 /// 홈 · 오늘 (핸드오프 B1 · spec §5).
@@ -70,18 +72,35 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       padding: const EdgeInsets.fromLTRB(
           Gap.lg, Gap.md, Gap.lg, kBottomNavClearance + Gap.xl),
       children: [
-        _Header(now: now),
+        SurlapScreenHeader.hero(
+          eyebrow: '${now.year}년 ${now.month}월 ${now.day}일 '
+              '${i18nd.weekdayShort(now.weekday)}요일',
+          title: '${now.month}월 ${now.day}일',
+          actions: [
+            SurlapIconButton(
+              icon: Icons.search_rounded,
+              onTap: () => showSearchSheet(context),
+              tooltip: tr('검색'),
+            ),
+            SurlapIconButton(
+              icon: Icons.bolt_rounded,
+              onTap: () =>
+                  showAddEditEventModal(context, dateKey: du.todayKey()),
+              tooltip: tr('빠른 추가'),
+            ),
+          ],
+        ),
         const SizedBox(height: Gap.md),
         _WeekStrip(now: now),
         const SizedBox(height: Gap.lg),
         _StatsRow(dateKey: todayKey),
-        _SectionHeading(tr('다가오는 일정')),
+        SurlapSection(title: tr('다가오는 일정')),
         _Upcoming(dateKey: todayKey, now: now),
-        _SectionHeading(tr('할 일')),
+        SurlapSection(title: tr('할 일')),
         _TodoList(dateKey: todayKey),
-        _SectionHeading(tr('오늘 급식')),
+        SurlapSection(title: tr('오늘 급식')),
         _Meal(now: now),
-        _SectionHeading(tr('다가오는 생일')),
+        SurlapSection(title: tr('다가오는 생일')),
         _Birthdays(now: now),
         SizedBox(height: Gap.lg, child: ColoredBox(color: sh.bg)),
       ],
@@ -89,93 +108,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   }
 }
 
-/// 섹션 제목 — 17px / 700, 위 space-6 아래 space-2.
-class _SectionHeading extends StatelessWidget {
-  final String text;
-  const _SectionHeading(this.text);
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: Gap.xl, bottom: Gap.sm),
-        child: Text(text,
-            style: AppType.section.copyWith(color: context.sh.ink)),
-      );
-}
-
 // ─────────────────────────────────────────────────────────────────────
-// 헤더 · 주 스트립
+// 주 스트립
 // ─────────────────────────────────────────────────────────────────────
-
-class _Header extends ConsumerWidget {
-  final DateTime now;
-  const _Header({required this.now});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sh = context.sh;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${now.year}년 ${now.month}월 ${now.day}일 '
-                '${i18nd.weekdayShort(now.weekday)}요일',
-                style: AppType.sub.copyWith(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: sh.ink.withValues(alpha: 0.48),
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                '${now.month}월 ${now.day}일',
-                style: AppType.display.copyWith(
-                  fontSize: 34,
-                  letterSpacing: -1.02,
-                  color: sh.ink,
-                ),
-              ),
-            ],
-          ),
-        ),
-        _IconBtn(
-          icon: Icons.search_rounded,
-          onTap: () => showSearchSheet(context),
-          tooltip: tr('검색'),
-        ),
-        _IconBtn(
-          icon: Icons.bolt_rounded,
-          onTap: () => showAddEditEventModal(context, dateKey: du.todayKey()),
-          tooltip: tr('빠른 추가'),
-        ),
-      ],
-    );
-  }
-}
-
-class _IconBtn extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  final String tooltip;
-  const _IconBtn(
-      {required this.icon, required this.onTap, required this.tooltip});
-
-  @override
-  Widget build(BuildContext context) => Tooltip(
-        message: tooltip,
-        child: InkResponse(
-          onTap: onTap,
-          radius: 22,
-          child: Padding(
-            padding: const EdgeInsets.all(6),
-            child: Icon(icon, size: 21, color: context.sh.ink),
-          ),
-        ),
-      );
-}
 
 /// 이번 주 스트립 — 오늘은 라임 원, 항목 있는 날은 accent 점.
 class _WeekStrip extends ConsumerWidget {
@@ -383,19 +318,13 @@ class _Upcoming extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sh = context.sh;
     final timed = ref
         .watch(calendarDayProvider(dateKey))
         .where((i) => !i.allDay)
         .toList();
 
     if (timed.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: Gap.sm),
-        child: Text(tr('오늘 남은 시간 일정이 없습니다.'),
-            style:
-                AppType.body.copyWith(color: sh.ink.withValues(alpha: 0.45))),
-      );
+      return SurlapInlineEmptyState(tr('오늘 남은 시간 일정이 없습니다.'));
     }
 
     return Column(
@@ -503,7 +432,6 @@ class _TodoList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sh = context.sh;
     // 오늘 + 날짜 없는 할 일.
     final todos = ref
         .watch(todosProvider)
@@ -512,12 +440,7 @@ class _TodoList extends ConsumerWidget {
       ..sort(_order);
 
     if (todos.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: Gap.sm),
-        child: Text(tr('할 일이 없습니다.'),
-            style:
-                AppType.body.copyWith(color: sh.ink.withValues(alpha: 0.45))),
-      );
+      return SurlapInlineEmptyState(tr('할 일이 없습니다.'));
     }
 
     return Column(
@@ -718,8 +641,7 @@ class _Birthdays extends ConsumerWidget {
     final upcoming = list.take(4).toList();
 
     if (upcoming.isEmpty) {
-      return Text(tr('등록된 생일이 없습니다.'),
-          style: AppType.body.copyWith(color: sh.ink.withValues(alpha: 0.45)));
+      return SurlapInlineEmptyState(tr('등록된 생일이 없습니다.'));
     }
 
     return Column(

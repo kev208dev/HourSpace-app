@@ -30,6 +30,19 @@ abstract final class Radii {
 /// 최소 터치 영역.
 const double kMinTouch = 44;
 
+/// 목록형 카드 안 행의 공통 여백 — 좌우 space-4, 상하 13.
+const EdgeInsets kListRowPadding =
+    EdgeInsets.symmetric(horizontal: Gap.lg, vertical: 13);
+
+/// 세그먼트 컨트롤 높이.
+///
+/// kMinTouch(44)보다 낮다. 화면 안에 끼워 넣는 좁은 토글이라 44 로 올리면
+/// 캘린더 헤더가 눈에 띄게 밀린다. 대신 좌우 여백으로 실제 탭 폭을 확보한다.
+const double kSegmentHeight = 36;
+
+/// 헤더 아이콘 버튼의 아이콘 크기. 터치 영역은 항상 kMinTouch.
+const double kHeaderIconSize = 20;
+
 /// 그림자 — 라이트/다크가 다르다. 호출부는 `Shadows.card(dark)` 형태로 쓴다.
 abstract final class Shadows {
   /// 0 1px 2px rgba(15,15,14,.07) / dark 0 1px 2px rgba(0,0,0,.5)
@@ -74,6 +87,22 @@ abstract final class Shadows {
 /// 기본 letter-spacing -0.01em, 제목 -0.03em, 큰 숫자·날짜 -0.02em
 /// (Flutter의 letterSpacing 은 px 이므로 fontSize × em 으로 환산해 둠).
 abstract final class AppType {
+  /// 홈 대형 날짜(hero 헤더 전용) — 34 / 600 / -0.03em
+  ///
+  /// TodayScreen 처럼 날짜 자체가 화면의 주인공인 곳에만 쓴다.
+  static const TextStyle heroTitle = TextStyle(
+      fontSize: 34, fontWeight: FontWeight.w600, height: 1.15, letterSpacing: -1.02);
+
+  /// 탭 화면 제목(standard 헤더) — 24 / 700 / -0.02em
+  ///
+  /// 할 일 · 공유 · 내 정보처럼 제목 한 줄로 시작하는 화면의 공통 규격.
+  static const TextStyle screenTitle = TextStyle(
+      fontSize: 24, fontWeight: FontWeight.w700, height: 1.2, letterSpacing: -0.48);
+
+  /// 캘린더 헤더 제목(이동 캐럿 사이) — 22 / 600 / -0.02em
+  static const TextStyle navTitle = TextStyle(
+      fontSize: 22, fontWeight: FontWeight.w600, height: 1.2, letterSpacing: -0.44);
+
   /// 앱 로고 / 대형 날짜 — 21 / 600 / -0.02em
   static const TextStyle display = TextStyle(
       fontSize: 21, fontWeight: FontWeight.w600, height: 1.25, letterSpacing: -0.42);

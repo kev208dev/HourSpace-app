@@ -152,14 +152,7 @@ class _ZoomOverlayState extends State<_ZoomOverlay>
                     decoration: BoxDecoration(
                       color: sh.card,
                       borderRadius: BorderRadius.circular(radius),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black
-                              .withValues(alpha: sh.dark ? 0.3 : 0.12),
-                          blurRadius: 24,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
+                      boxShadow: sh.shadowFloat,
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: Column(
@@ -234,13 +227,7 @@ class _MiniMonthCard extends StatelessWidget {
           border: isCurrentMonth
               ? Border.all(color: sh.accent, width: 1.5)
               : Border.all(color: sh.ink.withValues(alpha: 0.05)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: sh.dark ? 0.28 : 0.05),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          boxShadow: sh.shadowLift,
         ),
         child: Column(
           children: [
@@ -367,9 +354,9 @@ class _MiniMonthGrid extends StatelessWidget {
                               children: [
                                 Text(
                                   '$day',
-                                  style: TextStyle(
+                                  style: AppType.micro.copyWith(
                                     fontSize: 7.5,
-                                    color: isToday ? Colors.white : sh.ink,
+                                    color: isToday ? sh.onAccent : sh.ink,
                                     fontWeight: isToday
                                         ? FontWeight.w700
                                         : FontWeight.w400,
@@ -382,8 +369,9 @@ class _MiniMonthGrid extends StatelessWidget {
                                       width: 3,
                                       height: 3,
                                       decoration: BoxDecoration(
-                                        color:
-                                            isToday ? Colors.white : sh.accent,
+                                        color: isToday
+                                            ? sh.onAccent
+                                            : sh.accent,
                                         shape: BoxShape.circle,
                                       ),
                                     ),

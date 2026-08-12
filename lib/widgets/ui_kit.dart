@@ -24,6 +24,10 @@ class SurlapButton extends StatelessWidget {
   /// 파괴적 액션 — accent-2 로 칠한다.
   final bool destructive;
 
+  /// 헤더 안에 끼워 넣는 짧은 텍스트 액션("오늘", "하루 보기").
+  /// 여백만 줄이고 타이포·색은 그대로 둔다.
+  final bool dense;
+
   const SurlapButton({
     super.key,
     required this.label,
@@ -32,6 +36,7 @@ class SurlapButton extends StatelessWidget {
     this.block = false,
     this.icon,
     this.destructive = false,
+    this.dense = false,
   });
 
   @override
@@ -84,10 +89,12 @@ class SurlapButton extends StatelessWidget {
         highlightColor: pressed.withValues(alpha: 0.16),
         splashColor: pressed.withValues(alpha: 0.12),
         child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: block ? Gap.lg : 18,
-            vertical: 13,
-          ),
+          padding: dense
+              ? const EdgeInsets.symmetric(horizontal: 10, vertical: 6)
+              : EdgeInsets.symmetric(
+                  horizontal: block ? Gap.lg : 18,
+                  vertical: 13,
+                ),
           child: child,
         ),
       ),
@@ -169,33 +176,78 @@ class SurlapTag extends StatelessWidget {
 }
 
 // ─── 섹션 헤딩 ──────────────────────────────────────────────────────
-// h4 17 / 700, 위 space-6 · 아래 space-2.
+// 앱 전체의 유일한 섹션 제목 컴포넌트. 화면마다 private 헤딩을 만들지 않는다.
+
+/// 섹션 제목의 두 단계.
+///
+/// 하나로 합치지 않은 이유: 목업에 실제로 두 티어가 있다. 화면을 나누는
+/// 큰 제목(다가오는 일정 / 할 일)과, 카드 묶음 위에 얹는 작은 오버라인
+/// (학교 / 기록 / 앱, 날짜 있는 할 일)은 시각적 무게가 다르다.
+enum SurlapSectionStyle {
+  /// h4 17 / 700 — 화면을 나누는 섹션 제목.
+  heading,
+
+  /// 11 / 600 @50% — 카드 묶음 위 오버라인 라벨.
+  overline,
+}
 
 class SurlapSection extends StatelessWidget {
   final String title;
+
+  /// 제목 오른쪽에 붙는 위젯(수치 배지 등).
   final Widget? trailing;
+
+  /// 제목 오른쪽 짧은 수치(예: `2/5`). [trailing] 보다 먼저 그린다.
+  final String? counter;
+
+  /// 우측 텍스트 액션.
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   /// 화면 첫 섹션이면 위 여백을 줄인다.
   final bool first;
+
+  final SurlapSectionStyle style;
 
   const SurlapSection({
     super.key,
     required this.title,
     this.trailing,
+    this.counter,
+    this.actionLabel,
+    this.onAction,
     this.first = false,
+    this.style = SurlapSectionStyle.heading,
   });
 
   @override
   Widget build(BuildContext context) {
+    final sh = context.sh;
+    final overline = style == SurlapSectionStyle.overline;
     return Padding(
       padding: EdgeInsets.only(top: first ? Gap.md : Gap.xl, bottom: Gap.sm),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
-            child: Text(title,
-                style: AppType.section.copyWith(color: context.sh.ink)),
+            child: Text(
+              title,
+              style: overline
+                  ? AppType.label.copyWith(color: sh.ink.withValues(alpha: 0.50))
+                  : AppType.section.copyWith(color: sh.ink),
+            ),
           ),
+          if (counter != null)
+            Text(counter!, style: AppType.number.copyWith(color: sh.inkSoft)),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(width: Gap.xs),
+            SurlapButton(
+              label: actionLabel!,
+              onTap: onAction,
+              kind: SurlapButtonKind.ghost,
+              dense: true,
+            ),
+          ],
           ?trailing,
         ],
       ),
@@ -230,6 +282,9 @@ class SurlapCard extends StatelessWidget {
   final bool raised;
   final Color? color;
 
+  /// 목록형 카드 — 내부 여백 0 + 모서리 클립. 행이 divider 로 나뉘는 카드에 쓴다.
+  final bool list;
+
   const SurlapCard({
     super.key,
     required this.child,
@@ -237,6 +292,7 @@ class SurlapCard extends StatelessWidget {
     this.onTap,
     this.raised = false,
     this.color,
+    this.list = false,
   });
 
   @override
@@ -245,7 +301,8 @@ class SurlapCard extends StatelessWidget {
     final radius =
         BorderRadius.circular(raised ? Radii.hero : Radii.card);
     final body = Container(
-      padding: padding ?? const EdgeInsets.all(Gap.lg),
+      padding: padding ?? (list ? EdgeInsets.zero : const EdgeInsets.all(Gap.lg)),
+      clipBehavior: list ? Clip.antiAlias : Clip.none,
       decoration: BoxDecoration(
         color: color ?? sh.card,
         borderRadius: radius,
@@ -262,6 +319,129 @@ class SurlapCard extends StatelessWidget {
         child: body,
       ),
     );
+  }
+}
+
+/// 목록형 카드([SurlapCard.list]) 안의 행 하나.
+///
+/// 여백과 divider 만 책임진다. 내용은 화면이 채운다 — 할 일 행과 설정 행은
+/// 담는 것이 달라서 내용까지 공용화하면 오히려 기능이 뒤틀린다.
+class SurlapRow extends StatelessWidget {
+  final Widget child;
+
+  /// 마지막 행이면 아래 divider 를 그리지 않는다.
+  final bool last;
+
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+
+  /// 완료된 항목처럼 흐리게 보여야 할 때.
+  final double opacity;
+
+  const SurlapRow({
+    super.key,
+    required this.child,
+    this.last = false,
+    this.onTap,
+    this.onLongPress,
+    this.opacity = 1,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sh = context.sh;
+    final body = Opacity(
+      opacity: opacity,
+      child: Container(
+        padding: kListRowPadding,
+        decoration: BoxDecoration(
+          border: last ? null : Border(bottom: BorderSide(color: sh.border)),
+        ),
+        child: child,
+      ),
+    );
+    if (onTap == null && onLongPress == null) return body;
+    return InkWell(onTap: onTap, onLongPress: onLongPress, child: body);
+  }
+}
+
+// ─── 세그먼트 컨트롤 ────────────────────────────────────────────────
+// 테두리 1px + radius 12, 선택 칸은 accent 채움 + bg 글자, 칸 사이 세로 divider.
+
+/// 세그먼트 한 칸.
+typedef SurlapSegment = ({String label, String? semanticsLabel});
+
+SurlapSegment surlapSegment(String label, {String? semanticsLabel}) =>
+    (label: label, semanticsLabel: semanticsLabel);
+
+/// 캘린더 보기 모드(4칸)와 공유 탭(2칸)이 같은 컴포넌트를 쓴다.
+class SurlapSegmentedControl extends StatelessWidget {
+  final List<SurlapSegment> segments;
+  final int index;
+  final ValueChanged<int> onChanged;
+
+  /// 가로를 꽉 채울지. 기본은 내용 폭(좌측 정렬).
+  final bool expand;
+
+  const SurlapSegmentedControl({
+    super.key,
+    required this.segments,
+    required this.index,
+    required this.onChanged,
+    this.expand = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sh = context.sh;
+    final row = Row(
+      mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+      children: [
+        for (var i = 0; i < segments.length; i++)
+          _cell(context, i, sh),
+      ],
+    );
+
+    return Container(
+      height: kSegmentHeight,
+      decoration: BoxDecoration(
+        border: Border.all(color: sh.border),
+        borderRadius: BorderRadius.circular(Radii.md),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: row,
+    );
+  }
+
+  Widget _cell(BuildContext context, int i, SurlapColors sh) {
+    final selected = i == index;
+    final cell = Semantics(
+      button: true,
+      selected: selected,
+      label: segments[i].semanticsLabel,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => onChanged(i),
+        child: AnimatedContainer(
+          duration: Motion.micro,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 15),
+          decoration: BoxDecoration(
+            color: selected ? sh.accent : Colors.transparent,
+            border:
+                i == 0 ? null : Border(left: BorderSide(color: sh.border)),
+          ),
+          child: Text(
+            segments[i].label,
+            style: AppType.sub.copyWith(
+              fontWeight: FontWeight.w600,
+              color: selected ? sh.bg : sh.ink,
+            ),
+          ),
+        ),
+      ),
+    );
+    return expand ? Expanded(child: cell) : cell;
   }
 }
 
@@ -330,31 +510,47 @@ class SurlapWarningBanner extends StatelessWidget {
 }
 
 /// 인앱 고지 — 원본 앱의 알려진 한계를 화면에 그대로 노출할 때.
+///
+/// [boxed] 를 켜면 card2 박스로 감싼다. 목록 아래에서 한 덩어리로 읽혀야 하는
+/// 안내(저장 범위 고지 등)에 쓴다.
 class SurlapNotice extends StatelessWidget {
   final String message;
-  const SurlapNotice(this.message, {super.key});
+  final bool boxed;
+  const SurlapNotice(this.message, {super.key, this.boxed = false});
 
   @override
   Widget build(BuildContext context) {
     final sh = context.sh;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: Gap.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Icon(Icons.info_outline_rounded,
-                size: 14, color: sh.inkCaption),
-          ),
-          const SizedBox(width: 7),
-          Expanded(
-            child: Text(message,
-                style: AppType.caption
-                    .copyWith(color: sh.inkCaption, height: 1.6)),
-          ),
-        ],
+    final row = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(Icons.info_outline_rounded,
+              size: boxed ? 16 : 14, color: sh.inkCaption),
+        ),
+        SizedBox(width: boxed ? Gap.sm : 7),
+        Expanded(
+          child: Text(message,
+              style: (boxed ? AppType.sub : AppType.caption)
+                  .copyWith(color: sh.inkBody, height: 1.6)),
+        ),
+      ],
+    );
+
+    if (!boxed) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: Gap.sm),
+        child: row,
+      );
+    }
+    return Container(
+      padding: const EdgeInsets.all(Gap.md),
+      decoration: BoxDecoration(
+        color: sh.card2,
+        borderRadius: BorderRadius.circular(Radii.md),
       ),
+      child: row,
     );
   }
 }
@@ -405,6 +601,34 @@ class SurlapEmptyState extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// 목록 안 빈 자리 한 줄 — 화면 전체가 비지 않고 한 섹션만 비었을 때.
+///
+/// [SurlapEmptyState] 는 아이콘 + 제목 + 액션까지 있는 큰 빈 상태다. 섹션
+/// 하나가 비었을 뿐인데 그걸 쓰면 화면이 빈 상태로 도배된다. 그 자리는 전부
+/// 이 컴포넌트 하나로 통일한다(예전에는 맨 Text · card2 박스 · 인라인 Text 가
+/// 화면마다 섞여 있었다).
+class SurlapInlineEmptyState extends StatelessWidget {
+  final String message;
+  const SurlapInlineEmptyState(this.message, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final sh = context.sh;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(Gap.md),
+      decoration: BoxDecoration(
+        color: sh.card2,
+        borderRadius: BorderRadius.circular(Radii.md),
+      ),
+      child: Text(
+        message,
+        style: AppType.sub.copyWith(height: 1.55, color: sh.inkBody),
       ),
     );
   }

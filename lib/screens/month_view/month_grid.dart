@@ -336,15 +336,9 @@ class _MonthGridState extends State<MonthGrid> {
           height: panelH,
           decoration: BoxDecoration(
             color: sh.card,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(Radii.md),
             border: Border.all(color: sh.ink.withValues(alpha: 0.08)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: sh.dark ? 0.4 : 0.14),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            boxShadow: sh.shadowLift,
           ),
           padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 3),
           child: LayoutBuilder(builder: (ctx, cc) {
