@@ -69,8 +69,31 @@ Authentication → Providers → Apple
 
 Authentication → URL Configuration
 
-- Site URL: `https://kev208dev.github.io/Surlap/`
-- Redirect URLs: `https://kev208dev.github.io/Surlap/**`, `surlap://login-callback`
+**이걸 안 하면 로그인이 끝난 뒤 `http://localhost:3000` 으로 튕긴다.**
+새 Supabase 프로젝트의 Site URL 기본값이 `http://localhost:3000` 이고,
+Redirect URLs 는 비어 있다. `/auth/v1/callback` 은 `state` 에 실린 `redirect_to`
+를 **Redirect URLs 목록과 대조**해서, 매칭되지 않으면 조용히 Site URL 로
+보낸다. 클라이언트가 올바른 `redirect_to` 를 보내도 소용없다.
+
+| 필드 | 값 |
+| --- | --- |
+| Site URL | `https://kev208dev.github.io/Surlap/` |
+| Redirect URLs | `https://kev208dev.github.io/Surlap/` |
+| Redirect URLs | `https://kev208dev.github.io/Surlap/**` |
+| Redirect URLs | `surlap://login-callback` |
+
+- 정확 URL 과 `/**` 를 **둘 다** 넣는다. `/**` 가 빈 꼬리를 매칭하지 않는
+  경우가 있어 정확 URL 이 없으면 루트 복귀가 그대로 실패한다.
+- `surlap://login-callback` 이 없으면 **모바일 Google/Apple 리다이렉트 로그인**
+  도 같은 이유로 깨진다(iOS 네이티브 Apple 시트는 리다이렉트를 안 타므로 무관).
+- 진단 방법 — 토큰 없이 확인 가능하다. 아래가 `Location: http://localhost:3000…`
+  이면 미등록, 보낸 URL 그대로 돌아오면 등록된 것이다.
+
+  ```bash
+  curl -sI "https://enejjngrffugopgqeuxg.supabase.co/auth/v1/verify\
+?token=x&type=signup&redirect_to=https%3A%2F%2Fkev208dev.github.io%2FSurlap%2F" \
+    -H "apikey: <SUPABASE_ANON_KEY>" | grep -i location
+  ```
 
 ## 코드 쪽 동작 (검증 완료)
 
