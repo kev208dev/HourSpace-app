@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Surlap</title>
+<script>
+  // GitHub Pages 는 정적 파일 서버라서 /Surlap/theme/ABCD1234 처럼 실제 파일이
+  // 없는 경로를 요청하면 404 를 준다. 앱 링크로 들어오거나 그 주소에서
+  // 새로고침하면 앱이 아니라 GitHub 의 404 페이지를 보게 된다.
+  //
+  // 그래서 원래 경로를 쿼리에 실어 앱 루트로 넘긴다. index.html 이 이걸 받아
+  // 주소를 원래대로 되돌린 뒤 Flutter 를 띄운다 — 앱은 정상 경로로 시작한다.
+  //
+  // pathSegmentsToKeep = 1 : 저장소 이름(/Surlap)까지가 앱의 뿌리다.
+  //
+  // OAuth 복귀(/Surlap/?code=...)는 실재하는 경로라 이 파일까지 오지 않는다.
+  var pathSegmentsToKeep = 1;
+  var l = window.location;
+  l.replace(
+    l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+    l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
+    l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/')
+      .replace(/&/g, '~and~') +
+    (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+    l.hash
+  );
+</script>
+</head>
+<body></body>
+</html>

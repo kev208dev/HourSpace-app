@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.kev208dev.Surlap",
+      "sha256_cert_fingerprints": [
+        "6A:21:CD:EC:53:45:63:DF:96:2E:F8:E7:BE:7A:F0:5C:7B:C3:F7:F0:23:B7:90:AD:6C:D1:EF:8B:68:62:89:70"
+      ]
+    }
+  }
+]

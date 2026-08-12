@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="Surlap app icon">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7C3AED"></stop>
+      <stop offset="1" stop-color="#4C1D95"></stop>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="200" height="200" rx="46" fill="url(#g)"></rect>
+  <g transform="translate(40 40) scale(1)">
+    <circle cx="60" cy="60" r="42" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="7" stroke-linecap="round" stroke-dasharray="198 66" transform="rotate(-90 60 60)"></circle>
+    <circle cx="60" cy="60" r="29" fill="none" stroke="rgba(255,255,255,0.78)" stroke-width="7" stroke-linecap="round" stroke-dasharray="118 64" transform="rotate(50 60 60)"></circle>
+    <circle cx="60" cy="60" r="16" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-dasharray="70 31" transform="rotate(170 60 60)"></circle>
+  </g>
+</svg>

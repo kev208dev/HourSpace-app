@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="Surlap">
+  <circle cx="60" cy="60" r="42" fill="none" stroke="#4C1D95" stroke-width="7" stroke-linecap="round" stroke-dasharray="198 66" transform="rotate(-90 60 60)"></circle>
+  <circle cx="60" cy="60" r="29" fill="none" stroke="#7C3AED" stroke-width="7" stroke-linecap="round" stroke-dasharray="118 64" transform="rotate(50 60 60)"></circle>
+  <circle cx="60" cy="60" r="16" fill="none" stroke="#A855F7" stroke-width="7" stroke-linecap="round" stroke-dasharray="70 31" transform="rotate(170 60 60)"></circle>
+</svg>
