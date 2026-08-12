@@ -6,6 +6,19 @@ Flutter 쪽(데이터 브리지)은 이미 완료. iOS는 Xcode에서 **위젯 �
 App Group id: `group.com.kev208dev.Surlap`
 위젯 kind/이름: `SurlapWidget`
 
+Bundle ID:
+- Runner: `com.kev208dev.Surlap`
+  (Apple Developer 등록 App ID 는 `QXVSJ4484A.com.kev208dev.surlap`.
+   Bundle ID 는 case-insensitive 라 동일 식별자로 취급된다)
+- 위젯 익스텐션: `com.kev208dev.Surlap.SurlapWidget` (호스트 앱 ID 접두사 필수)
+
+App Group id 는 Bundle ID 와 달라도 무방하며 `group.com.kev208dev.Surlap` 을 유지한다.
+단, 두 App ID 모두에서 App Groups capability 에 이 그룹이 체크돼 있어야 한다.
+
+Runner App ID 에는 App Groups 외에 **Sign in with Apple** capability 도 켜져 있다
+(로그인용). Apple 로그인 쪽 설정값은 `docs/apple-signin-setup.md` 참고 —
+위젯과는 무관하니 여기서는 App Groups 만 신경 쓰면 된다.
+
 ---
 
 ## 1. 위젯 익스텐션 타겟 생성

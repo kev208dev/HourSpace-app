@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/constants/storage_keys.dart';
 import '../storage/local_store.dart';
+import 'apple_sign_in.dart';
 import 'supabase_client.dart';
 import 'account_scope.dart';
 
@@ -117,9 +118,82 @@ class AuthNotifier extends Notifier<User?> {
     }
   }
 
-  // 소셜 로그인(Google · 카카오 · Apple)은 화면에 버튼만 먼저 올려 두고
-  // 실제 연동은 아직 붙이지 않았다. 붙일 때 이 자리에 provider 별 진입점을
-  // 추가하고 login_screen 의 _notReady 를 대체한다.
+  // ── 소셜 로그인 ────────────────────────────────────────────────
+  //
+  // 셋 다 Supabase 가 기본 지원하는 provider 라 진입점은 같다. 실제로 되는지는
+  // Supabase 대시보드에서 해당 provider 를 켜 뒀는지에 달려 있고, 꺼져 있으면
+  // 서버가 오류를 준다 — 호출부가 그 오류를 사용자에게 그대로 안내한다.
+
+  /// 웹 OAuth 복귀 URL — 쿼리·프래그먼트(해시 라우트)는 떼고 경로는 보존한다.
+  ///
+  /// origin 만 쓰면 GitHub Pages 서브패스(/Surlap/)가 빠져 앱이 아닌 루트로
+  /// 돌아오고, 세션을 못 받아 로그인이 무한히 반복된다.
+  /// (Android 의 Uri.base 는 file:/// 이라 .origin 이 StateError — 커스텀 스킴을 쓴다)
+  String _webRedirectUrl() {
+    final b = Uri.base;
+    return Uri(
+      scheme: b.scheme,
+      host: b.host,
+      port: b.hasPort ? b.port : null,
+      path: b.path,
+    ).toString();
+  }
+
+  /// provider 공통 진입점. 리다이렉트 방식이라 세션 복원은 콜백 딥링크를
+  /// supabase_flutter 가 받아 처리하고, onAuthStateChange 에서 상태가 갱신된다.
+  Future<void> signInWithProvider(OAuthProvider provider) async {
+    final client = sb;
+    if (client == null) throw Exception('Supabase 클라이언트가 없습니다');
+    try {
+      await client.auth.signInWithOAuth(
+        provider,
+        redirectTo: kIsWeb ? _webRedirectUrl() : 'surlap://login-callback',
+        // iOS 기본값(내장 SFSafariViewController)에서는 Google 이 임베디드 웹뷰로
+        // 보고 흰 화면으로 막는다. 외부 브라우저로 띄워야 커스텀 스킴 콜백으로
+        // 정상 복귀한다(Android 는 supabase_flutter 가 이미 external 강제).
+        authScreenLaunchMode: LaunchMode.externalApplication,
+      );
+    } catch (e, st) {
+      debugPrint('[Auth] ${provider.name} 로그인 실패: ${e.runtimeType} → $e');
+      debugPrint('$st');
+      rethrow;
+    }
+  }
+
+  Future<void> signInGoogle() => signInWithProvider(OAuthProvider.google);
+
+  Future<void> signInKakao() => signInWithProvider(OAuthProvider.kakao);
+
+  /// Apple 로그인 — App Store 4.8 대응.
+  ///
+  /// iOS·macOS 는 OS 네이티브 시트 + signInWithIdToken 을 쓴다. 브라우저
+  /// 왕복이 없어 취소·실패를 그 자리에서 알 수 있고, 심사도 이쪽을 기대한다.
+  /// 그 밖(웹·Android)은 Google 과 똑같은 OAuth 리다이렉트 경로를 탄다.
+  ///
+  /// 어느 쪽이든 세션이 생긴 다음은 완전히 같다 — onAuthStateChange 하나로
+  /// AccountScope 가 스코프 전환·pull·invalidate 를 처리한다.
+  ///
+  /// 네이티브는 Supabase Apple provider 의 Client IDs 에 앱 번들 ID 가,
+  /// 리다이렉트는 Services ID 와 secret 이 들어 있어야 동작한다. 둘 다
+  /// 대시보드 설정이라 여기서 가정하지 않는다.
+  Future<void> signInApple() async {
+    final client = sb;
+    if (client == null) throw Exception('Supabase 클라이언트가 없습니다');
+    if (!AppleSignIn.usesNativeSheet) {
+      return signInWithProvider(OAuthProvider.apple);
+    }
+    try {
+      await AppleSignIn.signInNative(client);
+    } on AppleSignInUnsupported {
+      // 시트를 못 쓰는 기기(시뮬레이터 일부·구형 OS)는 리다이렉트로 돌아간다.
+      debugPrint('[Auth] 네이티브 Apple 로그인 불가 — OAuth 리다이렉트로 전환');
+      return signInWithProvider(OAuthProvider.apple);
+    } catch (e, st) {
+      debugPrint('[Auth] apple 로그인 실패: ${e.runtimeType} → $e');
+      debugPrint('$st');
+      rethrow;
+    }
+  }
 
   Future<void> signOut() async {
     await _clearCredentials(); // 자동 로그인 비활성화

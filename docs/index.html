@@ -14,6 +14,25 @@
   -->
   <base href="/Surlap/">
 
+  <script>
+    // 404.html 이 넘긴 원래 경로를 주소창에 되돌린다.
+    // (/Surlap/?/theme/ABCD1234 → /Surlap/theme/ABCD1234)
+    //
+    // Flutter 가 뜨기 전에 끝내야 한다. app_links 가 시작 링크로 읽는 값이
+    // 이 시점의 주소이기 때문이다. 그래서 flutter_bootstrap.js 보다 위에 둔다.
+    //
+    // OAuth 복귀(?code=...)는 두 번째 글자가 '/' 가 아니라 그냥 지나간다.
+    (function (l) {
+      if (l.search[1] === '/') {
+        var decoded = l.search.slice(1).split('&').map(function (s) {
+          return s.replace(/~and~/g, '&');
+        }).join('?');
+        window.history.replaceState(
+          null, null, l.pathname.slice(0, -1) + decoded + l.hash);
+      }
+    })(window.location);
+  </script>
+
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <!-- Pretendard Variable — 원본과 동일한 폰트 -->
